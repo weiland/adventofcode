@@ -1,6 +1,6 @@
 #lang racket
 
-(provide handle handle-seat solve-part-one solve-part-two)
+(provide handle handle-seat count-occupied-seats solve-part-one solve-part-two)
 
 (define (get-seat seats x y)
   (cond
@@ -46,7 +46,7 @@
 (define (can-be-emptied? seats x y)
   (and
       (is-occupied-seat? (get-seat seats x y))
-      (equal? 0 (count-seats (get-adjacent-seats seats x y) is-occupied-seat?))))
+      (<= 4 (count-seats (get-adjacent-seats seats x y) is-occupied-seat?))))
 
 (define (do-seat seats x y)
   (cond
@@ -54,23 +54,34 @@
     [(can-be-emptied? seats x y) "L"]
     [else (list-ref (list-ref seats y) x)]))
 
-(define (handle-row seats x y)
-  (let [(row (list-ref seats y))]
-    (list-set row x (do-seat seats x y))
-    ))
+(define (handle-row seats output x y)
+  (let [(row (list-ref output y))]
+    (list-set row x (do-seat seats x y))))
 
-(define (handle-seat seats x y)
-  (list-set seats y (handle-row seats x y)))
+(define (handle-seat seats output x y)
+  (list-set output y (handle-row seats output x y)))
 
-(define (handle seats x y)
+(define (handle seats output x y)
   (cond
-    [(>= y (length seats)) seats]
-    [(>= x (length (first seats))) (handle seats 0 (+ 1 y))]
-    [else (handle (handle-seat seats x y) (+ 1 x) y)]
+    [(>= y (length seats)) output]
+    [(>= x (length (first seats))) (handle seats output 0 (+ 1 y))]
+    [else (handle seats (handle-seat seats output x y) (+ 1 x) y)]
   ))
 
+(define (count-occupied-seats rows)
+  (length
+    (flatten
+      (map
+        (lambda (row)
+            (filter is-occupied-seat? row)) rows))))
+
+(define (walk rows)
+  (let [(first-attempt (handle rows rows 0 0))]
+    (let [(second-attempt (handle first-attempt first-attempt 0 0))]
+      (if (equal? first-attempt second-attempt) first-attempt (walk second-attempt)))))
+
 (define (solve-part-one rows)
-  rows)
+  (count-occupied-seats (walk rows)))
 
 (define (solve-part-two)
   2)
