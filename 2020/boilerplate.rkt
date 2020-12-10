@@ -1,15 +1,16 @@
 #lang racket
 
 (require test-engine/racket-tests)
+;; (require racket/trace)
 
 (define DAY "0")
 
 (define test-list '())
-(define expected-number 7)
+(define expected-number 0)
 
 (define input (file->lines (string-append "./input/" DAY ".txt")))
 
-(check-expect (not (empty? input)) #true)
+(check-expect (not (empty? input)) #t)
 
 
 (define result1 '())
