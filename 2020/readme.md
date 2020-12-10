@@ -5,5 +5,7 @@
 Local development
 
 ```shell
-ls *.rkt | entr -c -r racket 01.rkt
+ls *.rkt | entr -c -r racket (date +"%d").rkt
+
+vim (date +"%d").rkt
 ```
