@@ -6,7 +6,7 @@
 
 (define test-list (list "1-3 a: abcde" "1-3 b: cdefg" "2-9 c: ccccccccc"))
 
-(define input (file->lines "./input/2.txt"))
+(define input (file->lines (string-append "./input/" DAY ".txt")))
 
 (check-expect (not (empty? input)) #true)
 
