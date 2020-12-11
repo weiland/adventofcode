@@ -1,6 +1,9 @@
 #lang racket
 
-(provide handle handle-seat count-occupied-seats solve-part-one solve-part-two)
+(provide handle handle-seat count-occupied-seats solve-part-one
+         is-occupied-seat?
+         get-adjacent-seats-two
+         solve-part-two)
 
 (define (get-seat seats x y)
   (cond
@@ -79,6 +82,29 @@
   (let [(first-attempt (handle rows rows 0 0))]
     (let [(second-attempt (handle first-attempt first-attempt 0 0))]
       (if (equal? first-attempt second-attempt) first-attempt (walk second-attempt)))))
+
+(define (get-adjacent-seats-level seats x y level)
+  (list
+    ;; left col (including diag)
+    (get-seat seats (- x level) (- y level))
+    (get-seat seats (- x level) y)
+    (get-seat seats (- x level) (+ y level))
+
+    ;; bottom and top seats
+    (get-seat seats x (- y level))
+    (get-seat seats x (+ y level))
+
+    ;; right col (including diag)
+    (get-seat seats (+ x level) (- y level))
+    (get-seat seats (+ x level) y)
+    (get-seat seats (+ x level) (+ y level))))
+
+(define (get-adjacent-seats-two seats x y level max-level pred)
+  (cond
+    [(< max-level level) empty]
+    [else (filter pred (append
+            (get-adjacent-seats-level seats x y level)
+            (get-adjacent-seats-two seats x y (+ 1 level) max-level pred)))]))
 
 (define (solve-part-one rows)
   (count-occupied-seats (walk rows)))

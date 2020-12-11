@@ -102,10 +102,36 @@ L.#.L..#..
 (check-expect (solve-part-one test-input-list) expected-test-number)
 
 (print "Part 1 result is: ")
-(println (solve-part-one input-list))
+; (println (solve-part-one input-list))
+
+(define test1
+  (map
+    (lambda (line) (map string (string->list line)))
+    (string-split ".......#.
+...#.....
+.#.......
+.........
+..#L....#
+....#....
+.........
+#........
+...#....." "\n")))
+(define test2
+  (map
+    (lambda (line) (map string (string->list line)))
+    (string-split ".##.##.
+#.#.#.#
+##...##
+...L...
+##...##
+#.#.#.#
+.##.##." "\n")))
+
+(check-expect (length (get-adjacent-seats-two test1 3 4 1 (length test1) is-occupied-seat?)) 8)
+(check-expect (length (get-adjacent-seats-two test1 3 3 1 (length test2) is-occupied-seat?)) 0)
 
 
 (print "Part 2 result is: ")
-(println (solve-part-two))
+; (println (solve-part-two))
 
 (test)
