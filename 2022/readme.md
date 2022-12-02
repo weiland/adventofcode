@@ -1,5 +1,11 @@
 # 2022 Advent of Code 🎄
 
+### Start on a new day
+
+```shell
+sh newday.sh
+```
+
 ### Download input
 
 Add your session cookie value (can be taken from your browser) and add it into the `download.sh` file.
@@ -24,7 +30,7 @@ nix develop -c $SHELL
 Re-run code if file has changed (requires `fd` and `entr`):
 
 ```shell
-fd .rkt | entr -c -r racket N.rkt
+fd .rkt | entr -c -r racket (date +"%d").rkt
 ```
 
 
@@ -40,6 +46,8 @@ fd .rkt | entr -c -r racket N.rkt
 
 (test)
 ```
+
+or see `boilerplate.rkt`
 
 ### Editor setup
 
