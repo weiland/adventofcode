@@ -7,47 +7,56 @@
 
 (define raw-lines (file->lines (string-append "./input/" DAY ".txt")))
 
-(define (convert letter)
-  (cond
-    [(or (equal? letter "A") (equal? letter "X")) 1] ; Rock
-    [(or (equal? letter "B") (equal? letter "Y")) 2] ; Paper
-    [(or (equal? letter "C") (equal? letter "Z")) 3] ; Scissors
-    [else (error "invalid input letter to convert")]))
-
-(define (convert-line line) (map convert (string-split line " ")))
+(define (convert-line line) (string-split line " "))
 
 (define input (map convert-line raw-lines))
 
-;; Rock (1) defeats Scissors (3),
-;; Scissors (3) defeats Paper (2), and
-;; Paper (2) defeats Rock (1)
+;; Rock (A) defeats Scissors (C),
+;; Scissors (C) defeats Paper (B), and
+;; Paper (B) defeats Rock (A)
 (define (calculate-score line)
   (cond
-    [(and (equal? (first line) 1) (equal? (second line) 1)) 4] ; draw
-    [(and (equal? (first line) 1) (equal? (second line) 2)) 8] ; i won (paper defeats rock)
-    [(and (equal? (first line) 1) (equal? (second line) 3)) 3] ; i loose (rock defeats scissors)
-    [(and (equal? (first line) 2) (equal? (second line) 1)) 1] ; i loose
-    [(and (equal? (first line) 2) (equal? (second line) 2)) 5] ; draw
-    [(and (equal? (first line) 2) (equal? (second line) 3)) 9] ; i win
-    [(and (equal? (first line) 3) (equal? (second line) 1)) 7] ; i win
-    [(and (equal? (first line) 3) (equal? (second line) 2)) 2] ; i loose
-    [(and (equal? (first line) 3) (equal? (second line) 3)) 6] ; draw
+    [(and (equal? (first line) "A") (equal? (second line) "X")) 4] ; draw
+    [(and (equal? (first line) "A") (equal? (second line) "Y")) 8] ; i won (paper defeats rock)
+    [(and (equal? (first line) "A") (equal? (second line) "Z")) 3] ; i loose (rock defeats scissors)
+    [(and (equal? (first line) "B") (equal? (second line) "X")) 1] ; i loose
+    [(and (equal? (first line) "B") (equal? (second line) "Y")) 5] ; draw
+    [(and (equal? (first line) "B") (equal? (second line) "Z")) 9] ; i win
+    [(and (equal? (first line) "C") (equal? (second line) "X")) 7] ; i win
+    [(and (equal? (first line) "C") (equal? (second line) "Y")) 2] ; i loose
+    [(and (equal? (first line) "C") (equal? (second line) "Z")) 6] ; draw
     [else (error "invalid option")]
     ))
 
-(println (foldl + 0 (map calculate-score input)))
+;; X loose
+;; Y draw
+;; Z win
+(define (calculate-score-two line)
+  (cond
+    [(and (equal? (first line) "A") (equal? (second line) "X")) 3] ; loose
+    [(and (equal? (first line) "A") (equal? (second line) "Y")) 4] ; draw
+    [(and (equal? (first line) "A") (equal? (second line) "Z")) 8] ; win
+    [(and (equal? (first line) "B") (equal? (second line) "X")) 1] ; loose
+    [(and (equal? (first line) "B") (equal? (second line) "Y")) 5] ; draw
+    [(and (equal? (first line) "B") (equal? (second line) "Z")) 9] ; win
+    [(and (equal? (first line) "C") (equal? (second line) "X")) 2] ; loose
+    [(and (equal? (first line) "C") (equal? (second line) "Y")) 6] ; draw
+    [(and (equal? (first line) "C") (equal? (second line) "Z")) 7] ; win
+    [else (error "invalid option")]
+    ))
+
 
 (check-expect (not (empty? input)) #t)
 
 
 
-(define result1 '())
+(define result1 (foldl + 0 (map calculate-score input)))
 
 (println "Part 1 result is: ")
 (println result1)
 
 
-(define result2 '())
+(define result2 (foldl + 0(map calculate-score-two input)))
 
 (println "Part 2 result is: ")
 (println result2)
