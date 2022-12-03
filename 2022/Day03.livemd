@@ -1,0 +1,68 @@
+# AoC -- Day 03
+
+```elixir
+input = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/03.txt")
+
+test_input = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/03test.txt")
+```
+
+## Data preprocessing
+
+```elixir
+parse_line = fn line ->
+  line =
+    line
+    |> String.replace("\n", "")
+    |> String.split("", trim: true)
+
+  Enum.chunk_every(line, Integer.floor_div(Enum.count(line), 2))
+end
+
+input =
+  input
+  |> Stream.map(parse_line)
+
+# |> Enum.filter(fn el -> el != "\n" end)
+# |> Enum.reject(&Enum.member?(&1, "\n"))
+# |> Enum.to_list()
+# |> length()
+```
+
+## Part one
+
+```elixir
+calculate_priority = fn letter ->
+  char =
+    String.to_charlist(letter)
+    |> hd
+
+  # capital letter
+  # lowercase letter
+  if char >= 65 && char <= 90 do
+    char - 38
+  else
+    char - 96
+  end
+end
+
+find_duplicate = fn [comp1, comp2] ->
+  comp1
+  |> Enum.filter(fn item -> Enum.member?(comp2, item) end)
+  |> Enum.uniq()
+  |> List.first()
+end
+
+input
+|> Stream.map(find_duplicate)
+|> Stream.map(calculate_priority)
+# |> Stream.map(&Enum.map(&1, calculate_priority))
+|> Enum.sum()
+
+# |> Enum.to_list()
+```
+
+## Part two
+
+```elixir
+
+```
