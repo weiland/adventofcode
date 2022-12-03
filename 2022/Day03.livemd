@@ -10,20 +10,15 @@ test_input = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/03test.
 
 ```elixir
 parse_line = fn line ->
-  line =
-    line
-    |> String.replace("\n", "")
-    |> String.split("", trim: true)
-
-  Enum.chunk_every(line, Integer.floor_div(Enum.count(line), 2))
+  line
+  |> String.replace("\n", "")
+  |> String.split("", trim: true)
 end
 
 input =
   input
   |> Stream.map(parse_line)
 
-# |> Enum.filter(fn el -> el != "\n" end)
-# |> Enum.reject(&Enum.member?(&1, "\n"))
 # |> Enum.to_list()
 # |> length()
 ```
@@ -53,16 +48,24 @@ find_duplicate = fn [comp1, comp2] ->
 end
 
 input
+|> Stream.map(&Enum.chunk_every(&1, Integer.floor_div(Enum.count(&1), 2)))
 |> Stream.map(find_duplicate)
 |> Stream.map(calculate_priority)
-# |> Stream.map(&Enum.map(&1, calculate_priority))
 |> Enum.sum()
-
-# |> Enum.to_list()
 ```
 
 ## Part two
 
 ```elixir
+find_badge = fn [comp1, comp2, comp3] ->
+  Enum.filter(comp1, fn item -> Enum.member?(comp2, item) && Enum.member?(comp3, item) end)
+  |> Enum.uniq()
+  |> List.first()
+end
 
+input
+|> Enum.chunk_every(3)
+|> Enum.map(find_badge)
+|> Enum.map(calculate_priority)
+|> Enum.sum()
 ```
