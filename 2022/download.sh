@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 
-
 PREFIX='https://adventofcode.com/2022/day/'
 SUFFIX='/input'
 
@@ -11,10 +10,8 @@ URL="$PREFIX$DAY_SHORT$SUFFIX"
 
 TARGET="input/$DAY.txt"
 
-
 SESSION=$(cat session.txt)
-
 
 DATE="date +%Y:%m:%d"
 
-curl "$URL" -H "Cookie: session=$SESSION" --output "$TARGET"
+curl "$URL" -H "Cookie: session=$SESSION" --silent --output "$TARGET"
