@@ -1,12 +1,15 @@
 #!/usr/bin/env sh
 
+set -e
+
 YEAR=$(date +"%Y")
 PREFIX="https://adventofcode.com/$YEAR/day/"
 DAY=$(date +"%d")
 DAY_SHORT=$(echo "$DAY" | sed 's/^0*//')
 URL="$PREFIX$DAY_SHORT"
 SESSION=$(cat session.txt)
-HTML=$(curl "$URL" -H "Cookie: session=$SESSION")
+echo '⏳'
+HTML=$(curl "$URL" --silent -H "Cookie: session=$SESSION")
 TARGET_FILENAME="./$YEAR/$DAY.rkt"
 
 if [[ $HTML != *"Both parts of this puzzle are complete"* ]]; then
