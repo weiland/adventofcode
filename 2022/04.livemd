@@ -1,0 +1,47 @@
+<!-- livebook:{"autosave_interval_s":30,"persist_outputs":true} -->
+
+# Day 4: Camp Cleanup -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/04.txt")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%File.Stream{
+  path: "/Users/pw/src/weiland/adventofcode/2022/input/04.txt",
+  modes: [:raw, :read_ahead, :binary],
+  line_or_bytes: :line,
+  raw: true
+}
+```
+
+## Part One
+
+```elixir
+convert_to_pairs = fn line ->
+  line
+  |> String.replace("\n", "")
+  |> String.split(~r/,|-/)
+  |> Enum.map(&String.to_integer(&1))
+end
+
+is_fully_contained = fn [rmin, rmax, lmin, lmax] ->
+  (rmin <= lmin && rmax >= lmax) ||
+    (lmin <= rmin && lmax >= rmax)
+end
+
+stream
+|> Stream.map(convert_to_pairs)
+|> Stream.filter(is_fully_contained)
+|> Enum.count()
+
+# |> Enum.to_list
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+509
+```
