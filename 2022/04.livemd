@@ -36,12 +36,29 @@ stream
 |> Stream.map(convert_to_pairs)
 |> Stream.filter(is_fully_contained)
 |> Enum.count()
-
-# |> Enum.to_list
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
 509
+```
+
+## Part Two
+
+```elixir
+is_partially_contained = fn [rmin, rmax, lmin, lmax] ->
+  lmax >= rmin && lmin <= rmax
+end
+
+stream
+|> Stream.map(convert_to_pairs)
+|> Stream.filter(is_partially_contained)
+|> Enum.count()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+870
 ```
