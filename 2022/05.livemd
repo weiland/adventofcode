@@ -1,0 +1,660 @@
+<!-- livebook:{"autosave_interval_s":30,"persist_outputs":true} -->
+
+# Day 5: Supply Stacks -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/05.txt")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%File.Stream{
+  path: "/Users/pw/src/weiland/adventofcode/2022/input/05.txt",
+  modes: [:raw, :read_ahead, :binary],
+  line_or_bytes: :line,
+  raw: true
+}
+```
+
+## Part One
+
+```elixir
+build = fn line, [stack, moves] ->
+  line = line |> String.replace("\n", "")
+  # cond do
+  #   line == "\n" -> [stack, moves]
+  #   String.starts_with?(line, "move") -> [stack ,[line | moves]]
+  #   true -> [[line | stack], moves]
+  # end
+  if String.starts_with?(line, "move") do
+    [stack, [line | moves]]
+  else
+    [[line | stack], moves]
+  end
+end
+
+[stack, moves] =
+  stream
+  # |> Enum.to_list
+  |> Enum.reduce([[], []], build)
+
+# |> Enum.map(&Enum.reverse(&1))
+
+parse_stack = fn line ->
+  Regex.scan(~r/\[([A-Z\d])\]|\s{9}/, line, capture: :all_but_first)
+  # |> Enum.flat_map(fn el -> el end)
+  |> Enum.map(fn [el] -> el end)
+
+  #  |> Enum.with_index(1)
+  #  |> Enum.reduce(Map.new(), fn
+  #         {[_, crate], stack}, acc -> Map.put(acc, stack, [crate])
+  #         _, acc -> acc
+  #       end)
+
+  # [a, b] = 
+  # ~r/\[^[A-Z]\] \[^[A-Z\d]\]/
+  #   |> Regex.run(line, capture: :all)
+  # |> Enum.map(&String.to_integer/1)
+  # b
+end
+
+stack =
+  stack
+  # a bit stateful and hacky :see_no_evil:
+  |> Enum.map(&String.replace(&1, "    ", " [0]"))
+  # skip empty and the numbers (for now)
+  |> Enum.drop(2)
+  |> Enum.map(parse_stack)
+  # transpose
+  |> List.zip()
+  |> Enum.map(&Tuple.to_list/1)
+  |> Enum.map(&Enum.filter(&1, fn el -> el != "0" end))
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  ["Q", "S", "W", "C", "Z", "V", "F", "T"],
+  ["Q", "R", "B"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N", "F", "H", "W"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+```
+
+```elixir
+parse_moves = fn line ->
+  [res] = Regex.scan(~r/move ([\d]+) from ([\d]+) to ([\d]+)/, line, capture: :all_but_first)
+
+  res
+  |> Enum.map(&String.to_integer(&1))
+
+  # |> Enum.map(fn [list] -> list end)
+  # |> Enum.flat_map(&String.to_integer(&1))
+end
+
+moves =
+  moves
+  |> Enum.map(parse_moves)
+  |> Enum.reverse()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  [3, 8, 2],
+  [3, 1, 5],
+  [3, 1, 4],
+  [2, 7, 4],
+  [3, 7, 4],
+  [8, 5, 7],
+  [2, 1, 8],
+  [7, 3, 2],
+  [1, 5, 2],
+  [1, 6, 7],
+  [2, 5, 9],
+  [1, 9, 1],
+  [3, 9, 6],
+  [5, 6, 2],
+  [10, 7, 2],
+  [3, 8, 9],
+  [7, 9, 2],
+  [1, 1, 2],
+  [1, 9, 6],
+  [1, 4, 1],
+  [1, 8, 2],
+  [11, 4, 2],
+  [1, 7, 9],
+  [1, 4, 6],
+  [1, 9, 7],
+  [1, 1, 3],
+  [1, 7, 5],
+  [1, 4, 9],
+  [1, 5, 2],
+  [1, 3, 8],
+  [1, 6, 9],
+  [1, 8, 6],
+  [11, 2, 1],
+  [1, 6, 8],
+  [7, 2, 1],
+  [14, 2, 7],
+  [1, 6, 3],
+  [1, 8, 2],
+  [1, 3, 9],
+  [7, 7, 1],
+  [1, 6, 5],
+  [5, 7, 6],
+  [4, 2, 8],
+  [3, 6, 7],
+  [3, 7, 8],
+  [9, 1, 3],
+  [8, 3, 7],
+  [1, 3, ...],
+  [2, ...],
+  [...],
+  ...
+]
+```
+
+```elixir
+expand_move = fn move ->
+  [amount, from, to] = move
+
+  cond do
+    amount > 1 -> List.duplicate([1, from, to], amount)
+    true -> move
+  end
+end
+
+moves =
+  moves
+  |> Enum.flat_map(expand_move)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  [1, 8, 2],
+  [1, 8, 2],
+  [1, 8, 2],
+  [1, 1, 5],
+  [1, 1, 5],
+  [1, 1, 5],
+  [1, 1, 4],
+  [1, 1, 4],
+  [1, 1, 4],
+  [1, 7, 4],
+  [1, 7, 4],
+  [1, 7, 4],
+  [1, 7, 4],
+  [1, 7, 4],
+  [1, 5, 7],
+  [1, 5, 7],
+  [1, 5, 7],
+  [1, 5, 7],
+  [1, 5, 7],
+  [1, 5, 7],
+  [1, 5, 7],
+  [1, 5, 7],
+  [1, 1, 8],
+  [1, 1, 8],
+  [1, 3, 2],
+  [1, 3, 2],
+  [1, 3, 2],
+  [1, 3, 2],
+  [1, 3, 2],
+  [1, 3, 2],
+  [1, 3, 2],
+  1,
+  5,
+  2,
+  1,
+  6,
+  7,
+  [1, 5, 9],
+  [1, 5, 9],
+  1,
+  9,
+  1,
+  [1, 9, 6],
+  [1, 9, 6],
+  [1, 9, 6],
+  [1, 6, 2],
+  [1, 6, 2],
+  [1, 6, ...],
+  [1, ...],
+  [...],
+  ...
+]
+```
+
+```elixir
+exec_move = fn stack, from, to ->
+  [ilist] =
+    stack
+    |> Enum.drop(from - 1)
+    |> Enum.take(1)
+
+  [elem | tail] = ilist |> Enum.reverse()
+
+  IO.inspect(stack)
+
+  stack
+  |> Enum.with_index(1)
+  |> Enum.map(fn {list, index} ->
+    cond do
+      index == from -> Enum.reverse(tail)
+      index == to -> Enum.reverse([elem | Enum.reverse(list)])
+      true -> list
+    end
+  end)
+end
+
+# recursion does not work with anonymouse functions
+# exec_ins = fn stack, amount, from, to ->
+#   cond do
+#     amount == 1 -> exec_move.(stack, from, to)
+#     # amount > 1 -> exec_ins.(stack, (amount - 1), from to)
+#     true -> 999
+#   end
+# end
+
+# exec_ins.(stack, 3, 1, 2)
+moves
+|> Enum.take(32)
+|> Enum.reduce(stack, fn [_a, from, to], acc ->
+  IO.inspect("before")
+  exec_move.(acc, from, to)
+end)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"before"
+[
+  ["Q", "S", "W", "C", "Z", "V", "F", "T"],
+  ["Q", "R", "B"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N", "F", "H", "W"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W", "C", "Z", "V", "F", "T"],
+  ["Q", "R", "B", "W"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N", "F", "H"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W", "C", "Z", "V", "F", "T"],
+  ["Q", "R", "B", "W", "H"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N", "F"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W", "C", "Z", "V", "F", "T"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W", "C", "Z", "V", "F"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W", "C", "Z", "V"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W", "C", "Z"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W", "C"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S", "W"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R", "J"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F", "R"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S", "F"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N", "S"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "N"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F", "V"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T", "F"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D", "B", "S", "T", "P", "T"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D", "B", "S", "T", "P"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D", "B", "S", "T"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D", "B", "S"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D", "B"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L", "D"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q", "S"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  ["Q"],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  [],
+  ["Q", "R", "B", "W", "H", "F"],
+  ["B", "Z", "T", "Q", "P", "M", "S"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S", "Q"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  [],
+  ["Q", "R", "B", "W", "H", "F", "S"],
+  ["B", "Z", "T", "Q", "P", "M"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S", "Q"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  [],
+  ["Q", "R", "B", "W", "H", "F", "S", "M"],
+  ["B", "Z", "T", "Q", "P"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S", "Q"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  [],
+  ["Q", "R", "B", "W", "H", "F", "S", "M", "P"],
+  ["B", "Z", "T", "Q"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S", "Q"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  [],
+  ["Q", "R", "B", "W", "H", "F", "S", "M", "P", "Q"],
+  ["B", "Z", "T"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S", "Q"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  [],
+  ["Q", "R", "B", "W", "H", "F", "S", "M", "P", "Q", "T"],
+  ["B", "Z"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S", "Q"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+"before"
+[
+  [],
+  ["Q", "R", "B", "W", "H", "F", "S", "M", "P", "Q", "T", "Z"],
+  ["B"],
+  ["D", "V", "F", "R", "Q", "H", "Z", "C", "W", "J", "R", "F", "S", "N"],
+  ["J", "G", "L"],
+  ["W", "R", "T", "Z"],
+  ["H", "Q", "M", "V", "F", "T", "P", "T", "S", "B", "D"],
+  ["R", "N", "S", "Q"],
+  ["J", "Z", "T", "Q", "P", "R", "B"]
+]
+```
+
+## Part Two
+
+```elixir
+
+```
