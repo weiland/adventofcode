@@ -1,0 +1,37 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# Day 07: -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/07.txt")
+```
+
+## Part One
+
+```elixir
+stream =
+  stream
+  |> Stream.map(&String.trim/1)
+  |> Stream.map(&String.split(&1, " "))
+  |> Stream.map(fn [indicator | rest] ->
+    cond do
+      "$" == indicator && ["cd", ".."] == rest -> {:up}
+      "$" == indicator && ["cd"] == Enum.take(rest, 1) -> {:goto, List.first(Enum.drop(rest, 1))}
+      "$" == indicator && ["ls"] == rest -> {:ls}
+      "dir" == indicator -> {:directory, List.first(rest)}
+      # drop file-name
+      true -> {:file, String.to_integer(indicator)}
+    end
+  end)
+```
+
+```elixir
+
+```
+
+## Part Two
+
+```elixir
+stream
+|> Enum.to_list()
+```
