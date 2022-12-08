@@ -1,0 +1,21 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# Day X:  -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/X.txt")
+```
+
+## Part One
+
+```elixir
+stream
+|> Enum.to_list
+```
+
+## Part Two
+
+```elixir
+stream
+|> Enum.to_list
+```
