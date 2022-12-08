@@ -1,0 +1,122 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# Day 8: Treebottom Tree House -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/08.txt")
+test_input = "30373
+25512
+65332
+33549
+35390" |> String.split("\n")
+```
+
+## Part One
+
+```elixir
+input =
+  stream
+  |> Stream.map(&String.trim/1)
+  # |> Enum.to_list
+  |> Enum.map(&String.graphemes/1)
+  |> Enum.map(fn row -> Enum.map(row, &String.to_integer/1) end)
+```
+
+```elixir
+visible? = fn list, value ->
+  counts =
+    list
+    |> Enum.filter(fn item -> item >= value end)
+    |> Enum.count()
+
+  counts == 0
+end
+
+iv? = fn pos, list ->
+  value = Enum.at(list, pos)
+  left = Enum.take(list, pos)
+  right = Enum.drop(list, pos + 1)
+
+  visible?.(right, value) || visible?.(left, value)
+end
+
+is_visible? = fn x, y, matrix ->
+  y_row =
+    matrix
+    |> Enum.map(fn row -> Enum.at(row, x) end)
+
+  cond do
+    # edges are alaways visible
+    x == 0 || y == 0 || y == length(matrix) - 1 ||
+        x == length(List.first(matrix)) - 1 ->
+      true
+
+    iv?.(x, Enum.at(matrix, y)) || iv?.(y, y_row) ->
+      true
+
+    true ->
+      false
+  end
+end
+
+input
+|> Stream.map(&Enum.with_index/1)
+|> Stream.with_index()
+|> Stream.flat_map(fn {row, y} ->
+  row
+  |> Stream.map(fn {_item, x} -> is_visible?.(x, y, input) end)
+end)
+|> Stream.filter(fn item -> item end)
+|> Enum.count()
+```
+
+## Part Two
+
+```elixir
+reducer = fn value ->
+  fn element, acc ->
+    acc = [element | acc]
+
+    cond do
+      element >= value -> {:halt, acc}
+      true -> {:cont, acc}
+    end
+  end
+end
+
+local_score = fn pos, list ->
+  value = Enum.at(list, pos)
+  left = Stream.take(list, pos) |> Enum.reverse()
+  right = Stream.drop(list, pos + 1)
+
+  l = left |> Enum.reduce_while([], reducer.(value)) |> Enum.count()
+  r = right |> Enum.reduce_while([], reducer.(value)) |> Enum.count()
+
+  r * l
+end
+
+score = fn x, y, matrix ->
+  x_row = Enum.at(matrix, y)
+  y_row = Stream.map(matrix, fn row -> Enum.at(row, x) end)
+
+  cond do
+    # skip edges
+    x == 0 || y == 0 || y == length(matrix) - 1 ||
+        x == length(List.first(matrix)) - 1 ->
+      -1
+
+    true ->
+      local_score.(x, x_row) * local_score.(y, y_row)
+  end
+end
+
+input
+|> Stream.map(&Stream.with_index/1)
+|> Stream.with_index()
+|> Stream.map(fn {row, y} ->
+  row
+  |> Stream.map(fn {_item, x} -> score.(x, y, input) end)
+end)
+|> Stream.flat_map(fn item -> item end)
+|> Enum.max()
+```
