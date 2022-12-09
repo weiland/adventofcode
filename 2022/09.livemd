@@ -1,0 +1,88 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# Day 9: Rope Bridge -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/09.txt")
+```
+
+## Part One
+
+```elixir
+instructions =
+  stream
+  |> Stream.map(&String.trim/1)
+  |> Stream.map(&String.split(&1, " "))
+  |> Stream.flat_map(fn [i, n] -> List.duplicate(i, String.to_integer(n)) end)
+
+instructions
+|> Enum.to_list()
+```
+
+```elixir
+defmodule Solution do
+  def parse(instructions) do
+    init_value = %{head: %{x: 0, y: 0}, tail: %{x: 0, y: 0}, moves: [%{x: 0, y: 0}]}
+
+    instructions
+    |> Enum.reduce(init_value, &reduce/2)
+    |> then(fn value -> value.moves end)
+    |> Enum.uniq()
+    |> Enum.count()
+  end
+
+  def reduce(instruction, %{head: head, tail: tail, moves: moves}) do
+    x =
+      case instruction do
+        "L" -> -1
+        "R" -> 1
+        _ -> 0
+      end
+
+    y =
+      case instruction do
+        "U" -> 1
+        "D" -> -1
+        _ -> 0
+      end
+
+    new_head = %{x: head.x + x, y: head.y + y}
+    new_tail = if is_touching(new_head, tail), do: tail, else: head
+    new_moves = if new_tail != tail, do: [new_tail | moves], else: moves
+
+    %{head: new_head, tail: new_tail, moves: new_moves}
+  end
+
+  # def instruct("U") do
+  #   %{x: 0, y: 1}
+  # end
+
+  # def instruct("L") do
+  #   %{x: -1, y: 0}
+  # end
+
+  # def instruct("D") do
+  #   %{x: 0, y: -1}
+  # end
+
+  # def instruct("R") do
+  #   %{x: 1, y: 0}
+  # end
+
+  def is_touching(head, tail) do
+    x = Kernel.abs(head.x - tail.x)
+    y = Kernel.abs(head.y - tail.y)
+
+    x <= 1 && y <= 1
+  end
+end
+
+Solution.parse(instructions)
+```
+
+## Part Two
+
+```elixir
+stream
+|> Enum.to_list()
+```
