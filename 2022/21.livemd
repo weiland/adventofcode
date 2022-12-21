@@ -1,0 +1,100 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# Day 21: -- AoC 22
+
+```elixir
+# there is a comma in citizenstatezip as well
+stream =
+  "./input/21.txt"
+  |> Path.expand(__DIR__)
+  |> File.stream!()
+  |> Stream.map(&String.trim(&1))
+
+test_stream = "root: pppw + sjmn
+dbpl: 5
+cczh: sllz + lgvd
+zczc: 2
+ptdq: humn - dvpt
+dvpt: 3
+lfqf: 4
+humn: 5
+ljgn: 2
+sjmn: drzm * dbpl
+sllz: 4
+pppw: cczh / lfqf
+lgvd: ljgn * ptdq
+drzm: hmdt - zczc
+hmdt: 32" |> String.trim() |> String.split("\n")
+```
+
+## Part One
+
+```elixir
+%{nums: nums, terms: terms} =
+  Enum.reduce(stream, %{terms: [], nums: %{}}, fn cmd, %{terms: terms, nums: nums} ->
+    [var, body] = String.split(cmd, ": ")
+
+    if String.contains?(body, ["+", "-", "/", "*"]) do
+      [lhs, op, rhs] = String.split(body, " ")
+      terms = [%{var: var, lhs: lhs, op: op, rhs: rhs} | terms]
+      %{terms: terms, nums: nums}
+    else
+      nums = Map.put_new(nums, var, String.to_integer(body))
+      %{terms: terms, nums: nums}
+    end
+  end)
+
+iterate = fn terms, nums ->
+  terms
+  |> Stream.map(fn term ->
+    term
+    |> Map.put(
+      :rhs,
+      if(Enum.member?(Map.keys(nums), term.rhs), do: Map.get(nums, term.rhs), else: term.rhs)
+    )
+    |> Map.put(
+      :lhs,
+      if(Enum.member?(Map.keys(nums), term.lhs), do: Map.get(nums, term.lhs), else: term.lhs)
+    )
+  end)
+  |> Enum.reduce(%{nums: nums, terms: []}, fn term, %{nums: nums, terms: terms} ->
+    lhs = Map.get(term, :lhs)
+    rhs = Map.get(term, :rhs)
+    # after / it can be a float -> number
+    if is_number(lhs) && is_number(rhs) do
+      new_value =
+        case term.op do
+          "+" -> lhs + rhs
+          "-" -> lhs - rhs
+          # prevents floats
+          "/" -> round(lhs / rhs)
+          "*" -> lhs * rhs
+        end
+
+      nums = Map.put(nums, term.var, new_value)
+      %{nums: nums, terms: terms}
+    else
+      terms = [term | terms]
+      %{nums: nums, terms: terms}
+    end
+  end)
+end
+
+Stream.iterate(1, &(&1 + 1))
+|> Enum.reduce_while(%{nums: nums, terms: terms}, fn _x, acc ->
+  if Enum.count(acc.terms) <= 0 do
+    {:halt, acc}
+  else
+    {:cont, iterate.(acc.terms, acc.nums)}
+  end
+end)
+|> Map.get(:nums)
+|> Map.get("root")
+```
+
+## Part Two
+
+```elixir
+stream
+|> Enum.to_list()
+```
