@@ -47,3 +47,20 @@ fd .rkt | entr -c -r racket (date +"%d").rkt
 ### Editor setup
 
 Use rainbow brackets for racket and other lispy languages!
+
+## Languages
+
+### Livebook 
+
+```bash
+nix shell nixpkgs#livebook
+livebook server
+open http://localhost:8080/
+# and choose the current directory
+```
+
+### Racket
+
+```bash
+nix shell nixpkgs#racket
+```
