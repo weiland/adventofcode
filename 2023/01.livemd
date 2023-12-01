@@ -1,0 +1,94 @@
+# Day 01 -- AoC
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/01.txt")
+  |> Stream.map(&String.trim/1)
+```
+
+## Part One
+
+```elixir
+defmodule PartOne do
+  @doc """
+      iex> test_input = String.split("1abc2
+      ...>pqr3stu8vwx
+      ...>a1b2c3d4e5f
+      ...>treb7uchet", "\\n")
+      iex> PartOne.solve(test_input)
+      142
+  """
+  def solve(input) do
+    input
+    |> Stream.map(&String.replace(&1, ~r"[a-z]", ""))
+    |> Stream.map(&String.to_integer/1)
+    |> Stream.map(fn i -> if i <= 9, do: i + 10 * i, else: i end)
+    |> Stream.map(&Integer.digits/1)
+    |> Stream.map(fn [h | t] -> "#{h}#{Enum.at(t, -1)}" |> String.to_integer() end)
+    |> Enum.sum()
+  end
+end
+
+ExUnit.start(auto_run: false)
+
+defmodule PartTest do
+  use ExUnit.Case, async: false
+  doctest PartOne
+end
+
+ExUnit.run()
+
+PartOne.solve(input)
+```
+
+## Part Two
+
+```elixir
+defmodule PartTwo do
+  def parseNumbers(input) do
+    input
+    |> Stream.map(&String.replace(&1, "one", "one1one"))
+    |> Stream.map(&String.replace(&1, "two", "two2two"))
+    |> Stream.map(&String.replace(&1, "three", "three3three"))
+    |> Stream.map(&String.replace(&1, "four", "four4four"))
+    |> Stream.map(&String.replace(&1, "five", "five5five"))
+    |> Stream.map(&String.replace(&1, "six", "six6six"))
+    |> Stream.map(&String.replace(&1, "seven", "seven7seven"))
+    |> Stream.map(&String.replace(&1, "eight", "eight8eight"))
+    |> Stream.map(&String.replace(&1, "nine", "nine9nine"))
+  end
+
+  @doc """
+      iex> test_input_two = "two1nine
+      ...>eightwothree
+      ...>abcone2threexyz
+      ...>xtwone3four
+      ...>4nineeightseven2
+      ...>zoneight234
+      ...>7pqrstsixteen" |> String.split("\\n", trim: true)
+      iex> PartTwo.two(test_input_two)
+      281
+  """
+  def two(input) do
+    input
+    |> parseNumbers
+    |> Stream.map(&String.replace(&1, ~r"[a-z]", ""))
+    |> Stream.map(&String.to_integer/1)
+    |> Stream.map(fn i -> if i <= 9, do: i + 10 * i, else: i end)
+    |> Stream.map(&Integer.digits/1)
+    |> Stream.map(fn [h | t] -> "#{h}#{Enum.at(t, -1)}" |> String.to_integer() end)
+    |> Enum.sum()
+  end
+end
+
+ExUnit.start(auto_run: false)
+
+defmodule PartTwoTest do
+  use ExUnit.Case, async: false
+  doctest PartTwo
+end
+
+ExUnit.run()
+
+PartTwo.two(input)
+```
