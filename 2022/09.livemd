@@ -53,27 +53,8 @@ defmodule Solution do
     %{head: new_head, tail: new_tail, moves: new_moves}
   end
 
-  # def instruct("U") do
-  #   %{x: 0, y: 1}
-  # end
-
-  # def instruct("L") do
-  #   %{x: -1, y: 0}
-  # end
-
-  # def instruct("D") do
-  #   %{x: 0, y: -1}
-  # end
-
-  # def instruct("R") do
-  #   %{x: 1, y: 0}
-  # end
-
   def is_touching(head, tail) do
-    x = Kernel.abs(head.x - tail.x)
-    y = Kernel.abs(head.y - tail.y)
-
-    x <= 1 && y <= 1
+    Kernel.abs(head.x - tail.x) <= 1 && Kernel.abs(head.y - tail.y) <= 1
   end
 end
 
@@ -83,6 +64,60 @@ Solution.parse(instructions)
 ## Part Two
 
 ```elixir
-stream
-|> Enum.to_list()
+defmodule SolutionPartTwo do
+  def parse(instructions) do
+    init_value = %{
+      head: %{x: 0, y: 0},
+      tails: List.duplicate(%{x: 0, y: 0}, 9),
+      moves: [%{x: 0, y: 0}]
+    }
+
+    instructions
+    |> Enum.reduce(init_value, &reduce/2)
+
+    # |> then(fn value -> value.moves end)
+    # |> Enum.uniq
+    # |> Enum.count
+  end
+
+  def reduce(instruction, %{head: head, tails: tails, moves: moves}) do
+    x =
+      case instruction do
+        "L" -> -1
+        "R" -> 1
+        _ -> 0
+      end
+
+    y =
+      case instruction do
+        "U" -> 1
+        "D" -> -1
+        _ -> 0
+      end
+
+    new_head = %{x: head.x + x, y: head.y + y}
+
+    new_tails =
+      tails
+      |> Enum.reduce([], fn tail, acc ->
+        # prev = List.last(acc)
+        old_tail = if length(acc) == 0, do: new_head, else: List.last(acc)
+        new_tail = if is_touching(new_head, tail), do: tail, else: old_tail
+
+        [new_tail | acc]
+      end)
+
+    # new_moves = if new_tail != tail, do: [new_tail | moves], else: moves
+
+    %{head: new_head, tails: new_tails, moves: moves}
+  end
+
+  def is_touching(a, b) do
+    Kernel.abs(a.x - b.x) <= 1 && Kernel.abs(a.y - b.y) <= 1
+  end
+end
+
+SolutionPartTwo.parse(instructions)
+
+# 6464 is too high
 ```

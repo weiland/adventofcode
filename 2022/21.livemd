@@ -95,6 +95,82 @@ end)
 ## Part Two
 
 ```elixir
-stream
-|> Enum.to_list()
+%{nums: nums, terms: terms} =
+  Enum.reduce(stream, %{terms: [], nums: %{}}, fn cmd, %{terms: terms, nums: nums} ->
+    [var, body] = String.split(cmd, ": ")
+
+    if String.contains?(body, ["+", "-", "/", "*"]) do
+      [lhs, op, rhs] = String.split(body, " ")
+      op = if var == "root", do: "=", else: op
+      terms = [%{var: var, lhs: lhs, op: op, rhs: rhs} | terms]
+      %{terms: terms, nums: nums}
+    else
+      nums = Map.put_new(nums, var, String.to_integer(body))
+      %{terms: terms, nums: nums}
+    end
+  end)
+
+iterate2 = fn terms, nums ->
+  terms
+  |> Stream.map(fn term ->
+    term
+    |> Map.put(
+      :rhs,
+      if(Enum.member?(Map.keys(nums), term.rhs), do: Map.get(nums, term.rhs), else: term.rhs)
+    )
+    |> Map.put(
+      :lhs,
+      if(Enum.member?(Map.keys(nums), term.lhs), do: Map.get(nums, term.lhs), else: term.lhs)
+    )
+  end)
+  |> Enum.reduce(%{nums: nums, terms: []}, fn term, %{nums: nums, terms: terms} ->
+    lhs = Map.get(term, :lhs)
+    rhs = Map.get(term, :rhs)
+    # after / it can be a float -> number
+    if is_number(lhs) && is_number(rhs) do
+      new_value =
+        case term.op do
+          "+" -> lhs + rhs
+          "-" -> lhs - rhs
+          # prevents floats
+          "/" -> round(lhs / rhs)
+          "*" -> lhs * rhs
+          "=" -> lhs == rhs
+        end
+
+      nums = Map.put(nums, term.var, new_value)
+      %{nums: nums, terms: terms}
+    else
+      terms = [term | terms]
+      %{nums: nums, terms: terms}
+    end
+  end)
+end
+
+nums = Map.put(nums, "humn", 0)
+
+Stream.iterate(2240, &(&1 + 1))
+|> Enum.reduce_while(nil, fn x, _acc ->
+  new_nums = Map.put(nums, "humn", Map.get(nums, "humn") + x)
+  # new_acc = Map.put(acc, :nums, new_nums)
+
+  result =
+    Stream.iterate(1, &(&1 + 1))
+    |> Enum.reduce_while(%{nums: new_nums, terms: terms}, fn _y, acc ->
+      cond do
+        # Enum.count(acc.terms) <= 0 && Map.get(acc.nums, "root") -> {:halt, acc}
+        # new try
+        Enum.count(acc.terms) <= 0 -> {:halt, acc}
+        true -> {:cont, iterate2.(acc.terms, acc.nums)}
+      end
+    end)
+    |> Map.get(:nums)
+
+  if Map.get(result, "root") do
+    {:halt, result}
+  else
+    {:cont, nil}
+  end
+end)
+|> Map.get("humn")
 ```
