@@ -1,0 +1,108 @@
+# Day 2: Cube Conundrum – Advent of Code
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/02.txt")
+  |> Stream.map(&String.trim/1)
+  # separate game and body
+  |> Stream.map(&String.split(&1, ":"))
+```
+
+## Solutions for Part One and Two
+
+```elixir
+defmodule DayTwo do
+  @red_limit 12
+  @green_limit 13
+  @blue_limit 14
+
+  def test_input do
+    "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
+    |> String.split("\n", trim: true)
+    |> Stream.map(&String.split(&1, ":"))
+  end
+
+  @doc """
+      iex> DayTwo.one(DayTwo.test_input)
+      8
+  """
+  def one(input) do
+    input
+    |> Stream.filter(fn [_, body] -> !exceeds_limits(body) end)
+    |> Stream.map(fn ["Game " <> game, _] -> String.to_integer(game) end)
+    |> Enum.sum()
+  end
+
+  defp exceeds_limits(body) do
+    body
+    # create pairs of amount and color
+    |> String.split(~r"[;,]")
+    |> Stream.map(&String.trim/1)
+    |> Stream.map(&String.split(&1, " "))
+    |> Stream.map(&too_high/1)
+    |> Enum.reduce(fn curr, acc -> acc || curr end)
+  end
+
+  defp too_high([n, color]) do
+    n = String.to_integer(n)
+
+    cond do
+      color == "red" && n > @red_limit -> true
+      color == "green" && n > @green_limit -> true
+      color == "blue" && n > @blue_limit -> true
+      true -> false
+    end
+  end
+
+  @doc """
+      iex> DayTwo.two(DayTwo.test_input)
+      2286
+  """
+  def two(input) do
+    input
+    |> Stream.map(fn [_, body] -> body end)
+    |> Stream.map(&String.split(&1, ~r"[,;]", trim: true))
+    |> Stream.map(&parse/1)
+    |> Enum.sum()
+  end
+
+  defp parse(line) do
+    lst =
+      line
+      |> Stream.map(&String.trim/1)
+      |> Stream.map(&String.split(&1, " "))
+      |> Stream.map(fn [n, color] -> [String.to_integer(n), color] end)
+
+    [max_for(lst, "green"), max_for(lst, "red"), max_for(lst, "blue")]
+    |> Enum.product()
+  end
+
+  defp max_for(lst, col) do
+    lst
+    |> Enum.filter(fn [_, color] -> color == col end)
+    |> Enum.max_by(fn [n, _] -> n end)
+    |> Enum.at(0)
+  end
+end
+
+ExUnit.start(auto_run: false)
+
+defmodule PartTest do
+  use ExUnit.Case, async: false
+  doctest DayTwo
+end
+
+ExUnit.run()
+```
+
+```elixir
+DayTwo.one(input)
+```
+
+```elixir
+DayTwo.two(input)
+```
