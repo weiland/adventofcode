@@ -1,4 +1,4 @@
-# Day 01 -- AoC
+# Day 1: Trebuchet?! – Advent of Code
 
 ```elixir
 input =
@@ -45,7 +45,7 @@ PartOne.solve(input)
 
 ```elixir
 defmodule PartTwo do
-  def parseNumbers(input) do
+  defp parse_numbers(input) do
     input
     |> Stream.map(&String.replace(&1, "one", "one1one"))
     |> Stream.map(&String.replace(&1, "two", "two2two"))
@@ -66,12 +66,12 @@ defmodule PartTwo do
       ...>4nineeightseven2
       ...>zoneight234
       ...>7pqrstsixteen" |> String.split("\\n", trim: true)
-      iex> PartTwo.two(test_input_two)
+      iex> PartTwo.solve(test_input_two)
       281
   """
-  def two(input) do
+  def solve(input) do
     input
-    |> parseNumbers
+    |> parse_numbers
     |> Stream.map(&String.replace(&1, ~r"[a-z]", ""))
     |> Stream.map(&String.to_integer/1)
     |> Stream.map(fn i -> if i <= 9, do: i + 10 * i, else: i end)
@@ -90,5 +90,5 @@ end
 
 ExUnit.run()
 
-PartTwo.two(input)
+PartTwo.solve(input)
 ```
