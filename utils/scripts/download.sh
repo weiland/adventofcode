@@ -13,7 +13,5 @@ TARGET="./$YEAR/input/$DAY.txt"
 
 SESSION=$(cat session.txt)
 
-DATE="date +%Y:%m:%d"
-
 curl "$URL" -H "Cookie: session=$SESSION" --silent --output "$TARGET" \
-&& echo "Input downloaded"
+&& echo "Input downloaded for day $DAY_SHORT."

@@ -2,65 +2,17 @@
 
 > [https://adventofcode.com/](https://adventofcode.com/)
 
-There are directories for each year.
+My attempts for **Advent of code**.
 
-### Preparation
+## 2023
 
-Login at https://adventofcode.com/ and save `session` cookie value to `session.txt`.
+Here you can find my solutions for year *2023*:
 
-### Start on a new day
+https://github.com/weiland/adventofcode/tree/main/2023
 
-```shell
-sh newday.sh
-```
-
-This will create a new (racket) file and download the input.
-
-### Download input
-
-Add your session cookie value (can be taken from your browser) and add it into the `download.sh` file.
-
-Download for today:
-
-```shell
-sh download.sh
-```
-
-Others days must be done manually.
-
-
-### Run code
-
-Creating a nix shell with `racket` dependency:
-
-```shell
-nix develop -c $SHELL
-```
-
-Re-run code if file has changed (requires `fd` and `entr`):
-
-```shell
-fd .rkt | entr -c -r racket (date +"%d").rkt
-```
-
-
-### Editor setup
-
-Use rainbow brackets for racket and other lispy languages!
 
 ## Languages
 
-### Livebook 
+Older solutions are written in *racket*.
+Newer ones in *elixir* and sometimes *typescript/deno*, too.
 
-```bash
-nix shell nixpkgs#livebook
-livebook server
-open http://localhost:8080/
-# and choose the current directory
-```
-
-### Racket
-
-```bash
-nix shell nixpkgs#racket
-```
