@@ -21,5 +21,5 @@ fi
 
 git add "$TARGET_FILENAME"
 
-git commit -m "Add solution for day $DAY_SHORT" \
+git commit -m "feat(day$DAY): add solution for part one and two" \
 && git push
