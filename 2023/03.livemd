@@ -1,0 +1,211 @@
+# Day 3: Gear Ratios – Advent of Code
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/03.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input = "467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598.." |> String.split("\n")
+```
+
+## Part One
+
+```elixir
+matrix =
+  input
+  |> Stream.map(&String.split(&1, "", trim: true))
+
+matrix |> Enum.to_list()
+```
+
+```elixir
+lookup_map =
+  matrix
+  |> Stream.map(&Enum.with_index(&1))
+  |> Enum.with_index()
+  |> Enum.reduce(Map.new(), fn {row, y}, acc ->
+    Map.merge(
+      acc,
+      Enum.reduce(row, Map.new(), fn {val, x}, macc ->
+        Map.put(macc, {x, y}, val)
+      end)
+    )
+  end)
+```
+
+```elixir
+line_neighbors = fn mat, x, y ->
+  (x - 1)..(x + 1)
+  |> Enum.map(&Map.get(mat, {&1, y}))
+  |> Enum.reject(&is_nil/1)
+end
+
+line_neighbors.(lookup_map, 0, 0)
+```
+
+```elixir
+neighbors = fn mat, x, y ->
+  (y - 1)..(y + 1)
+  |> Enum.map(&line_neighbors.(mat, x, &1))
+  |> Enum.reject(&Enum.empty?/1)
+  |> Enum.flat_map(fn x -> x end)
+end
+
+neighbors.(lookup_map, 3, 0)
+```
+
+```elixir
+has_char = fn arr ->
+  arr
+  |> Enum.filter(fn n -> n != "." && Integer.parse(n) == :error end)
+  |> then(&(!Enum.empty?(&1)))
+end
+
+has_char.(neighbors.(lookup_map, 3, 0))
+```
+
+```elixir
+maxX = matrix |> Enum.count() |> then(&(&1 - 1))
+maxY = matrix |> Enum.at(0) |> Enum.count() |> then(&(&1 - 1))
+
+{maxX, maxY}
+```
+
+```elixir
+handle_c = fn x, y ->
+  value =
+    lookup_map
+    |> Map.get({x, y})
+
+  if Integer.parse(value) == :error do
+    {nil, x, y, false}
+  else
+    {value, x, y, has_char.(neighbors.(lookup_map, x, y))}
+  end
+end
+
+combine = fn {value, x, _y, state}, acc ->
+  %{a: a, v: v, n: n} = acc
+  is_last = x == maxX
+
+  new_n = if value != nil, do: n <> value, else: n
+  new_v = state || v
+  new_a = if v == true, do: [new_n | a], else: a
+
+  cond do
+    (value == nil && n != "") || (value != nil && is_last) -> %{a: new_a, v: false, n: ""}
+    value != nil -> acc |> Map.put(:n, new_n) |> Map.put(:v, new_v)
+    true -> acc
+  end
+end
+
+handle_row = fn row ->
+  row
+  |> Enum.reduce(%{a: [], v: false, n: ""}, &combine.(&1, &2))
+  |> Map.get(:a)
+  |> Enum.map(fn n -> String.to_integer(n) end)
+end
+```
+
+Solution for part one:
+
+```elixir
+0..maxY
+|> Enum.map(fn y -> 0..maxX |> Enum.map(&handle_c.(&1, y)) end)
+|> Enum.map(&handle_row.(&1))
+|> Enum.flat_map(fn n -> n end)
+|> Enum.sum()
+
+# |> then(&(&1 == 4361))
+```
+
+## Part Two
+
+```elixir
+find_whole_number = fn x, y ->
+  curr = Map.get(lookup_map, {x, y})
+
+  if Integer.parse(curr) == :error do
+    false
+  else
+    reduce_num = fn x, acc, action ->
+      element = Map.get(lookup_map, {x, y})
+
+      if Integer.parse(element) == :error do
+        {:halt, acc}
+      else
+        result = if action == :append, do: acc <> element, else: element <> acc
+        {:cont, result}
+      end
+    end
+
+    prefix =
+      if x > 0, do: (x - 1)..0 |> Enum.reduce_while("", &reduce_num.(&1, &2, :prepend)), else: ""
+
+    suffix =
+      if x < maxX,
+        do: (x + 1)..maxX |> Enum.reduce_while("", &reduce_num.(&1, &2, :append)),
+        else: ""
+
+    (prefix <> curr <> suffix)
+    |> String.to_integer()
+  end
+end
+
+line_neighbor_numbers = fn x, y ->
+  curr = Map.get(lookup_map, {x, y})
+
+  if Integer.parse(curr) == :error do
+    [find_whole_number.(x - 1, y), find_whole_number.(x + 1, y)]
+  else
+    [find_whole_number.(x, y)]
+  end
+end
+
+line_neighbor_numbers.(12, 1)
+```
+
+```elixir
+neighbor_numbers = fn x, y ->
+  (y - 1)..(y + 1)
+  |> Enum.map(&line_neighbor_numbers.(x, &1))
+  |> Enum.reject(&Enum.empty?/1)
+  |> Enum.flat_map(fn x -> x end)
+  |> Enum.reject(&(!&1))
+end
+
+neighbor_numbers.(11, 2)
+```
+
+```elixir
+find_stars = fn x, y ->
+  if Map.get(lookup_map, {x, y}) == "*" do
+    neighbor_numbers.(x, y)
+  else
+    false
+  end
+end
+```
+
+Solution for part two:
+
+```elixir
+0..maxY
+|> Enum.map(fn y -> 0..maxX |> Enum.map(&find_stars.(&1, y)) end)
+|> Enum.flat_map(fn n -> n end)
+|> Enum.reject(&(!&1))
+|> Enum.filter(&(Enum.count(&1) == 2))
+|> Enum.map(fn [a, b] -> a * b end)
+|> Enum.sum()
+
+# |> Kernel.==(467835)
+```
