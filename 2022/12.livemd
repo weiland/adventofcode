@@ -1,0 +1,88 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# [WIP]: Day 12: Hill Climbing Algorithm -- AoC 22
+
+```elixir
+stream =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/12.txt")
+  |> Stream.map(&String.trim/1)
+
+stream =
+  "aabqponm
+abcryxxl
+accszExk
+acctuvwj
+abdefghi"
+  |> String.split("\n")
+```
+
+## Part One
+
+```elixir
+reducer = fn {row, y}, acc ->
+  new_row =
+    row
+    |> Enum.reduce(%{}, fn {value, x}, row_acc -> Map.put(row_acc, %{x: x, y: y}, value) end)
+
+  acc
+  |> Map.merge(new_row)
+end
+
+stream =
+  stream
+  |> Stream.map(&String.graphemes/1)
+  |> Stream.map(&Enum.with_index/1)
+  |> Stream.with_index()
+  |> Enum.reduce(%{}, reducer)
+
+# stream |> Enum.filter(fn {_key, value} -> value == "S" end)
+```
+
+```elixir
+defmodule Solution do
+  def find_path(x, y, path, matrix) do
+    current_value = Map.get(matrix, %{x: x, y: y})
+    current_element = %{%{x: x, y: x} => current_value}
+
+    if current_value == "E" do
+      path
+    end
+
+    neighbours =
+      get_neighbours(x, y, matrix)
+      # only new neighbours
+      |> Enum.filter(fn n -> !Enum.member?(path, n) end)
+
+    if Kernel.length(neighbours) == 0 do
+      :abort
+    end
+
+    neighbours
+    |> Enum.map(fn %{x: x, y: y} -> find_path(x, y, [current_element | path], matrix) end)
+    |> Enum.filter(fn n -> n != :abort end)
+  end
+
+  def get_neighbours(x, y, matrix) do
+    current_value = Map.get(matrix, %{x: x, y: y})
+
+    %{}
+    |> Map.put(%{x: x - 1, y: y}, Map.get(matrix, %{x: x - 1, y: y}))
+    |> Map.put(%{x: x + 1, y: y}, Map.get(matrix, %{x: x + 1, y: y}))
+    |> Map.put(%{x: x, y: y - 1}, Map.get(matrix, %{x: x, y: y - 1}))
+    |> Map.put(%{x: x, y: y + 1}, Map.get(matrix, %{x: x, y: y + 1}))
+    |> Map.filter(fn {_key, value} -> value != nil end)
+    |> Map.filter(fn {_key, value} -> value >= current_value != nil end)
+    |> Map.to_list()
+    |> Enum.map(fn {key, value} -> key end)
+  end
+end
+
+Solution.find_path(0, 1, [%{x: 0, y: 0}], stream)
+```
+
+## Part Two
+
+```elixir
+stream
+|> Enum.to_list()
+```

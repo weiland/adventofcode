@@ -1,0 +1,34 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# [WIP]: Day 10: Cathode-Ray Tube -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/10.txt")
+```
+
+## Part One
+
+```elixir
+input =
+  stream
+  |> Stream.map(&String.trim/1)
+  |> Stream.map(&String.split(&1, " "))
+  |> Stream.map(fn line ->
+    if length(line) == 2, do: String.to_integer(Enum.at(line, 1)), else: :noop
+  end)
+  |> Stream.with_index(1)
+```
+
+```elixir
+cycles = [20, 60, 100, 140, 180, 220]
+
+input
+# |> Stream.map
+```
+
+## Part Two
+
+```elixir
+stream
+|> Enum.to_list()
+```

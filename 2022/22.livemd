@@ -1,0 +1,37 @@
+<!-- livebook:{"autosave_interval_s":30} -->
+
+# [WIP]: Day 22: Monkey Map -- AoC 22
+
+```elixir
+stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/22.txt")
+```
+
+## Part One
+
+```elixir
+chunk_fun = fn element, acc ->
+  if element == "\n" do
+    {:cont, acc, []}
+  else
+    {:cont, [String.trim(element) | acc]}
+  end
+end
+
+after_fun = fn
+  [] -> {:cont, []}
+  acc -> {:cont, acc, []}
+end
+
+[row, path] = Enum.chunk_while(stream, [], chunk_fun, after_fun)
+
+IO.inspect(path)
+
+row
+```
+
+## Part Two
+
+```elixir
+stream
+|> Enum.to_list()
+```
