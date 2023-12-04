@@ -1,37 +1,107 @@
-<!-- livebook:{"autosave_interval_s":30} -->
-
 # Day 07: -- AoC 22
 
 ```elixir
-stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/07.txt")
+input = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/07.txt")
+test_input = "$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k" |> String.split("\n")
 ```
 
 ## Part One
 
 ```elixir
-stream =
-  stream
+stream = fn input ->
+  input
   |> Stream.map(&String.trim/1)
   |> Stream.map(&String.split(&1, " "))
   |> Stream.map(fn [indicator | rest] ->
     cond do
-      "$" == indicator && ["cd", ".."] == rest -> {:up}
+      "$" == indicator && ["cd", ".."] == rest -> {:up, nil}
       "$" == indicator && ["cd"] == Enum.take(rest, 1) -> {:goto, List.first(Enum.drop(rest, 1))}
-      "$" == indicator && ["ls"] == rest -> {:ls}
+      "$" == indicator && ["ls"] == rest -> {:ls, nil}
       "dir" == indicator -> {:directory, List.first(rest)}
       # drop file-name
       true -> {:file, String.to_integer(indicator)}
     end
   end)
+end
 ```
 
 ```elixir
+build_tree = fn stream ->
+  stream
+  |> Enum.map_reduce([], fn t, acc ->
+    {a, v} = t
 
+    cond do
+      a == :up -> {Tuple.append(t, []), Enum.drop(acc, 1)}
+      a == :goto -> {Tuple.append(t, []), [v | acc]}
+      true -> {Tuple.append(t, acc), acc}
+    end
+  end)
+  |> then(fn {lst, _rst} -> lst end)
+  |> Enum.reject(fn {a, _, _} -> a == :up || a == :goto || a == :ls || a == :directory end)
+  |> Enum.reduce(%{}, fn {_action, size, path}, acc ->
+    0..(Enum.count(path) - 1)
+    |> Enum.map(fn pos -> Enum.drop(path, pos) end)
+    |> Enum.reduce(acc, fn dir, ac ->
+      Map.merge(ac, Map.new([{dir, size}]), fn _k, a, b -> a + b end)
+    end)
+  end)
+  |> Enum.map(fn {_path, size} -> size end)
+end
+```
+
+```elixir
+limit = 100_000
+
+part_one = fn stream ->
+  build_tree.(stream)
+  |> Enum.reject(&(&1 > limit))
+  |> Enum.sum()
+end
+
+IO.inspect(part_one.(stream.(test_input)) == 95437, label: "smoke test")
+
+part_one.(stream.(input))
 ```
 
 ## Part Two
 
 ```elixir
-stream
-|> Enum.to_list()
+system_max = 70_000_000
+min_needed = 30_000_000
+
+part_two = fn stream ->
+  tree = build_tree.(stream)
+  limit = min_needed - system_max + Enum.max(tree)
+
+  tree
+  |> Enum.reject(&(&1 < limit))
+  |> Enum.min()
+end
+
+IO.inspect(part_two.(stream.(test_input)) == 24_933_642, label: "smoke test")
+
+part_two.(stream.(input))
 ```
