@@ -1,4 +1,4 @@
-# Day 4 – Advent of Code
+# Day 4: Scratchcards – Advent of Code
 
 ```elixir
 input =
@@ -18,19 +18,6 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"
 ## Parse lines
 
 ```elixir
-# part one
-parse_lines = fn lines ->
-  lines
-  |> Stream.map(&String.split(&1, ~r"[:\|]"))
-  |> Stream.map(fn [_card, winnings, chosen] ->
-    [winnings, chosen]
-    |> Enum.map(fn lst ->
-      lst |> String.split(" ", trim: true) |> Enum.map(&String.to_integer/1)
-    end)
-  end)
-end
-
-# for part two, include the card id
 parse_cards = fn lines ->
   lines
   |> Stream.map(&String.split(&1, ~r"[:\|]"))
@@ -51,9 +38,9 @@ input |> parse_cards.() |> Enum.to_list()
 ```elixir
 part_one = fn lines ->
   lines
-  |> parse_lines.()
-  # |> Stream.map(fn [a, b] -> a -- (a -- b) end) # alt for function below
-  |> Stream.map(fn [a, b] ->
+  |> parse_cards.()
+  # |> Stream.map(fn [_card, a, b] -> a -- (a -- b) end) # alt for function below
+  |> Stream.map(fn [_card, a, b] ->
     MapSet.intersection(MapSet.new(a), MapSet.new(b)) |> MapSet.to_list()
   end)
   |> Stream.map(&Enum.count/1)
@@ -61,23 +48,27 @@ part_one = fn lines ->
   |> Enum.sum()
 end
 
+# smoke test
 part_one.(test_input) == 13
 
-input |> part_one.()
+part_one.(input)
 ```
 
 ## Part 2
 
 ```elixir
+# append the winning ranges (next cards)
 card_and_wins = fn cards ->
   cards
-  |> Stream.map(fn [c, a, b] ->
-    MapSet.intersection(MapSet.new(a), MapSet.new(b))
+  |> Stream.map(fn [card_id, wins, chosen] ->
+    MapSet.intersection(MapSet.new(wins), MapSet.new(chosen))
     |> MapSet.to_list()
+    # winnings count
     |> Enum.count()
-    |> then(&if &1 == 0, do: [], else: (c + 1)..(&1 + c))
+    |> then(&if &1 == 0, do: [], else: (card_id + 1)..(&1 + card_id))
     |> Enum.to_list()
-    |> then(&[c, &1])
+    # prepend the card id to the list of ranges
+    |> then(&[card_id, &1])
   end)
 end
 
@@ -85,16 +76,11 @@ part_two = fn lines ->
   lines
   |> parse_cards.()
   |> card_and_wins.()
-  # bottom up
+  # start bottom up
   |> Enum.reverse()
   # create map with *all* wins
   |> Enum.reduce(%{}, fn [card, wins], acc ->
-    if Enum.count(wins) == 0 do
-      Map.put(acc, card, card)
-    else
-      new_wins = Enum.map(wins, &Map.get(acc, &1))
-      Map.put(acc, card, [card | new_wins])
-    end
+    Map.put(acc, card, [card | Enum.map(wins, &Map.get(acc, &1))])
   end)
   # convert map to list
   |> Enum.reduce([], fn {_card, v}, acc -> [v | acc] end)
