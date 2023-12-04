@@ -18,6 +18,7 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"
 ## Parse lines
 
 ```elixir
+# part one
 parse_lines = fn lines ->
   lines
   |> Stream.map(&String.split(&1, ~r"[:\|]"))
@@ -29,7 +30,20 @@ parse_lines = fn lines ->
   end)
 end
 
-test_input |> parse_lines.() |> Enum.to_list()
+# for part two, include the card id
+parse_cards = fn lines ->
+  lines
+  |> Stream.map(&String.split(&1, ~r"[:\|]"))
+  |> Stream.map(fn ["Card " <> card, winnings, chosen] ->
+    [winnings, chosen]
+    |> Enum.map(fn lst ->
+      lst |> String.split(" ", trim: true) |> Enum.map(&String.to_integer/1)
+    end)
+    |> then(&[String.to_integer(String.trim(card)) | &1])
+  end)
+end
+
+input |> parse_cards.() |> Enum.to_list()
 ```
 
 ## Part 1
@@ -51,3 +65,49 @@ part_one.(test_input) == 13
 
 input |> part_one.()
 ```
+
+## Part 2
+
+```elixir
+card_and_wins = fn cards ->
+  cards
+  |> Stream.map(fn [c, a, b] ->
+    MapSet.intersection(MapSet.new(a), MapSet.new(b))
+    |> MapSet.to_list()
+    |> Enum.count()
+    |> then(&if &1 == 0, do: [], else: (c + 1)..(&1 + c))
+    |> Enum.to_list()
+    |> then(&[c, &1])
+  end)
+end
+
+part_two = fn lines ->
+  lines
+  |> parse_cards.()
+  |> card_and_wins.()
+  # bottom up
+  |> Enum.reverse()
+  # create map with *all* wins
+  |> Enum.reduce(%{}, fn [card, wins], acc ->
+    if Enum.count(wins) == 0 do
+      Map.put(acc, card, card)
+    else
+      new_wins = Enum.map(wins, &Map.get(acc, &1))
+      Map.put(acc, card, [card | new_wins])
+    end
+  end)
+  # convert map to list
+  |> Enum.reduce([], fn {_card, v}, acc -> [v | acc] end)
+  # |> Enum.flat_map(fn {_card, v} -> if is_map(v), do: v, else: [v] end) # same as above
+  |> List.flatten()
+  |> Enum.frequencies_by(& &1)
+  |> Enum.reduce(0, fn {_card, count}, total -> total + count end)
+end
+
+# smoke test
+part_two.(test_input) == 30
+
+part_two.(input)
+```
+
+[![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2F2023%2F03.livemd)
