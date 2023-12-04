@@ -1,0 +1,53 @@
+# Day 4 – Advent of Code
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/04.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input =
+  "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"
+  |> String.split("\n")
+```
+
+## Parse lines
+
+```elixir
+parse_lines = fn lines ->
+  lines
+  |> Stream.map(&String.split(&1, ~r"[:\|]"))
+  |> Stream.map(fn [_card, winnings, chosen] ->
+    [winnings, chosen]
+    |> Enum.map(fn lst ->
+      lst |> String.split(" ", trim: true) |> Enum.map(&String.to_integer/1)
+    end)
+  end)
+end
+
+test_input |> parse_lines.() |> Enum.to_list()
+```
+
+## Part 1
+
+```elixir
+part_one = fn lines ->
+  lines
+  |> parse_lines.()
+  # |> Stream.map(fn [a, b] -> a -- (a -- b) end) # alt for function below
+  |> Stream.map(fn [a, b] ->
+    MapSet.intersection(MapSet.new(a), MapSet.new(b)) |> MapSet.to_list()
+  end)
+  |> Stream.map(&Enum.count/1)
+  |> Stream.map(fn c -> if c == 0, do: 0, else: 2 ** (c - 1) end)
+  |> Enum.sum()
+end
+
+part_one.(test_input) == 13
+
+input |> part_one.()
+```
