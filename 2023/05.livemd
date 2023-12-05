@@ -62,8 +62,6 @@ parse_from_stream = fn raw_almanac ->
     |> Stream.drop(1)
     |> Stream.reject(&(&1 == ""))
 
-  # |> Enum.reduce(parse_map)
-
   %{seeds: seeds, maps: maps}
 end
 
@@ -75,30 +73,17 @@ parse_string = fn raw_almanac ->
     |> Enum.map(&String.split(&1, "\n"))
     |> Enum.map(fn [map | numbers] ->
       [[_match, from, to]] = Regex.scan(~r/(.*)-to-(.*) map:/, map)
-      # start_map = 
+
       ins =
         numbers
+        |> Enum.reject(fn l -> l == "" end)
         |> Enum.map(fn l -> String.split(l, " ") |> Enum.map(&String.to_integer/1) end)
-        |> Enum.reduce(%{}, fn [dest, src, len], acc ->
-          Enum.zip(
-            Enum.to_list(src..(src + len - 1)),
-            Enum.to_list(dest..(dest + len - 1))
-          )
-          |> Enum.into(%{})
-          |> Map.merge(acc)
-        end)
 
       [from, to, ins]
     end)
 
   %{seeds: String.split(seeds, " ") |> Enum.map(&String.to_integer/1), maps: maps}
 end
-
-parse_string.(test_input)
-```
-
-```elixir
-
 ```
 
 ## Part One
@@ -107,12 +92,21 @@ parse_string.(test_input)
 part_one = fn input ->
   %{seeds: seeds, maps: maps} = parse_string.(input)
 
-  maps
-  |> Enum.reduce(seeds, fn [_s, _d, map], acc -> acc |> Enum.map(&Map.get(map, &1, &1)) end)
+  Enum.reduce(maps, seeds, fn [_s, _d, map], acc ->
+    Enum.map(acc, fn seed ->
+      Enum.reduce_while(map, seed, fn [d, s, l], _acc ->
+        if s <= seed && seed < s + l do
+          {:halt, d + (seed - s)}
+        else
+          {:cont, seed}
+        end
+      end)
+    end)
+  end)
   |> Enum.min()
 end
 
-IO.inspect(part_one.(test_input) == 35)
+IO.inspect(part_one.(test_input) == 35, label: "Smoke test part one")
 
 part_one.(input)
 ```
