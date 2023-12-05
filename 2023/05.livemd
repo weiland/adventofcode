@@ -1,0 +1,131 @@
+# Day 5: If You Give A Seed A Fertilizer – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/05.txt")
+  |> Enum.join("")
+
+# |> Stream.map(&String.trim/1)
+
+test_input =
+  "seeds: 79 14 55 13
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4"
+```
+
+## Parsing
+
+```elixir
+parse_from_stream = fn raw_almanac ->
+  seeds =
+    raw_almanac
+    |> Stream.take(1)
+    |> Enum.to_list()
+    |> Enum.at(0)
+    |> then(fn "seeds: " <> seeds -> seeds end)
+    |> String.split(" ")
+    |> Enum.map(&String.to_integer/1)
+
+  maps =
+    raw_almanac
+    # remove seeds
+    |> Stream.drop(1)
+    |> Stream.reject(&(&1 == ""))
+
+  # |> Enum.reduce(parse_map)
+
+  %{seeds: seeds, maps: maps}
+end
+
+parse_string = fn raw_almanac ->
+  ["seeds: " <> seeds | maps] = String.split(raw_almanac, "\n\n")
+
+  maps =
+    maps
+    |> Enum.map(&String.split(&1, "\n"))
+    |> Enum.map(fn [map | numbers] ->
+      [[_match, from, to]] = Regex.scan(~r/(.*)-to-(.*) map:/, map)
+      # start_map = 
+      ins =
+        numbers
+        |> Enum.map(fn l -> String.split(l, " ") |> Enum.map(&String.to_integer/1) end)
+        |> Enum.reduce(%{}, fn [dest, src, len], acc ->
+          Enum.zip(
+            Enum.to_list(src..(src + len - 1)),
+            Enum.to_list(dest..(dest + len - 1))
+          )
+          |> Enum.into(%{})
+          |> Map.merge(acc)
+        end)
+
+      [from, to, ins]
+    end)
+
+  %{seeds: String.split(seeds, " ") |> Enum.map(&String.to_integer/1), maps: maps}
+end
+
+parse_string.(test_input)
+```
+
+```elixir
+
+```
+
+## Part One
+
+```elixir
+part_one = fn input ->
+  %{seeds: seeds, maps: maps} = parse_string.(input)
+
+  maps
+  |> Enum.reduce(seeds, fn [_s, _d, map], acc -> acc |> Enum.map(&Map.get(map, &1, &1)) end)
+  |> Enum.min()
+end
+
+IO.inspect(part_one.(test_input) == 35)
+
+part_one.(input)
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> Enum.to_list()
+end
+
+part_two.(test_input)
+```
+
+[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
