@@ -1,21 +1,44 @@
-<!-- livebook:{"autosave_interval_s":30} -->
-
-# Day X:  -- AoC 22
+# Day N: NAME – Advent of Code 2023
 
 ```elixir
-stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/X.txt")
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/NN.txt")
+  #|> Stream.map(&String.trim/1)
+
+test_input =
+  ""
+  |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+parse = fn input ->
+  input
+end
 ```
 
 ## Part One
 
 ```elixir
-stream
-|> Enum.to_list
+part_one = fn input ->
+  input
+  |> parse.()
+  |> Enum.to_list
+end
+
+part_one.(test_input)
 ```
 
 ## Part Two
 
 ```elixir
-stream
-|> Enum.to_list
+part_two = fn input ->
+  input
+  |> Enum.to_list
+end
+
+part_two.(test_input)
 ```
+
+[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
