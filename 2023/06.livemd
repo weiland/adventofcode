@@ -1,0 +1,87 @@
+# Day 6: Wait For It – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/06.txt")
+  |> Stream.map(&String.trim/1)
+  |> Enum.to_list()
+
+test_input =
+  "Time:      7  15   30
+Distance:  9  40  200"
+  |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+parse_pairs = fn input ->
+  input
+  |> Enum.map(fn line ->
+    String.split(line, ":")
+    |> Enum.at(1)
+    |> String.split(" ", trim: true)
+    |> Enum.map(&String.to_integer/1)
+  end)
+  |> Enum.zip()
+end
+
+parse_pair = fn input ->
+  input
+  |> Enum.map(fn line ->
+    String.split(line, ":")
+    |> Enum.at(1)
+    |> String.replace(" ", "")
+    |> String.to_integer()
+  end)
+  |> Enum.chunk_every(1)
+  |> Enum.zip()
+  |> Enum.at(0)
+end
+```
+
+## Part One
+
+```elixir
+find_options = fn {max_time, max_distance} ->
+  Enum.to_list(2..(max_time - 1))
+  |> Enum.reject(fn time -> time * (max_time - time) <= max_distance end)
+  |> Enum.count()
+end
+
+part_one = fn input ->
+  input
+  |> parse_pairs.()
+  |> Enum.map(find_options)
+  |> Enum.product()
+end
+
+IO.inspect(part_one.(test_input) == 288, label: "smoke test part two")
+
+part_one.(input)
+```
+
+## Part Two
+
+```elixir
+find_options_fast = fn {max_time, max_distance} ->
+  # solve for time: time * (max_time - time) > max_distance
+  (max_time ** 2)
+  |> Kernel.-(max_distance * 4)
+  # alternative |> Kernel.**(1/2)
+  |> :math.sqrt()
+  |> trunc
+end
+
+part_two = fn input ->
+  input
+  |> parse_pair.()
+  |> find_options_fast.()
+end
+
+IO.inspect(part_two.(test_input) == 71503, label: "smoke test part two")
+
+part_two.(input)
+```
+
+[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
