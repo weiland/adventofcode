@@ -1,3 +1,5 @@
+<!-- livebook:{"file_entries":[{"file":{"file_system_id":"local","file_system_type":"local","path":"/Users/pw/src/weiland/adventofcode/2023/input/05.txt"},"name":"05.txt","type":"file"}]} -->
+
 # Day 5: If You Give A Seed A Fertilizer – Advent of Code 2023
 
 ```elixir
@@ -89,9 +91,7 @@ end
 ## Part One
 
 ```elixir
-part_one = fn input ->
-  %{seeds: seeds, maps: maps} = parse_string.(input)
-
+find_min_location = fn %{seeds: seeds, maps: maps} ->
   Enum.reduce(maps, seeds, fn [_s, _d, map], acc ->
     Enum.map(acc, fn seed ->
       Enum.reduce_while(map, seed, fn [d, s, l], _acc ->
@@ -106,6 +106,12 @@ part_one = fn input ->
   |> Enum.min()
 end
 
+part_one = fn input ->
+  input
+  |> parse_string.()
+  |> find_min_location.()
+end
+
 IO.inspect(part_one.(test_input) == 35, label: "Smoke test part one")
 
 part_one.(input)
@@ -114,12 +120,58 @@ part_one.(input)
 ## Part Two
 
 ```elixir
-part_two = fn input ->
-  input
-  |> Enum.to_list()
+res = fn %{seeds: seeds, maps: blocks} ->
+  map_matrix =
+    blocks
+    |> Enum.map(fn [_, _, maps] ->
+      Enum.map(maps, fn [d, s, l] ->
+        %{
+          destination_start: d,
+          destination_end: d + l - 1,
+          source_start: s,
+          source_end: s + l - 1
+        }
+      end)
+    end)
+
+  map_matrix
+  |> Enum.with_index()
+  |> Enum.map(fn {maps, i} ->
+    maps
+    |> Enum.map(fn m ->
+      Enum.slice(map_matrix, 0, i + 1)
+      # reduce right
+      |> Enum.reverse()
+      |> Enum.reduce(m.destination_start, fn maps, acc ->
+        n = Enum.find(maps, fn m -> acc >= m.destination_start && acc <= m.destination_end end)
+        if n, do: n.source_start + (acc - n.destination_start), else: acc
+      end)
+    end)
+  end)
+  |> List.flatten()
+  |> Enum.filter(fn seed ->
+    seeds
+    |> Enum.chunk_every(2)
+    |> Enum.any?(fn [s, len] -> seed >= s && seed < s + len end)
+  end)
+  |> Enum.map(fn seed ->
+    map_matrix
+    |> Enum.reduce(seed, fn maps, acc ->
+      m = Enum.find(maps, fn m -> acc >= m.source_start && acc <= m.source_end end)
+      if m, do: m.destination_start + (acc - m.source_start), else: acc
+    end)
+  end)
+  |> Enum.min()
 end
 
-part_two.(test_input)
+part_two = fn input ->
+  input
+  |> parse_string.()
+  |> res.()
+end
+
+IO.inspect(part_two.(test_input) == 46, label: "Smoke test part one")
+part_two.(input)
 ```
 
 [New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
