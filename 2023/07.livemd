@@ -1,0 +1,187 @@
+# Day 7: Camel cards – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/07.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input = "32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483" |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+parse_hand_joker = fn hand, with_joker ->
+  String.graphemes(hand)
+  |> Enum.map(fn grapheme ->
+    case grapheme do
+      "T" -> 10
+      "J" -> if with_joker, do: 1, else: 11
+      "Q" -> 12
+      "K" -> 13
+      "A" -> 14
+      _ -> String.to_integer(grapheme)
+    end
+  end)
+end
+
+parse_hand = fn hand ->
+  parse_hand_joker.(hand, false)
+end
+
+traditional_score = fn lst ->
+  cond do
+    # :five_of_a_kind
+    Enum.count(lst) == 1 -> 7
+    # :four_of_a_kind
+    Enum.count(lst) == 2 && Enum.max(lst) == 4 -> 6
+    # :full_house
+    Enum.count(lst) == 2 -> 5
+    # :three_of_kind
+    Enum.count(lst) == 3 && Enum.max(lst) == 3 -> 4
+    # :two_pair
+    Enum.count(lst) == 3 -> 3
+    # :one_pair
+    Enum.count(lst) == 4 -> 2
+    # :high_card
+    Enum.count(lst) == 5 -> 1
+  end
+end
+
+score_from_map = fn map ->
+  map
+  |> Map.to_list()
+  |> Enum.map(fn {_value, char_list} -> Enum.count(char_list) end)
+  |> traditional_score.()
+end
+
+get_score = fn graphemes ->
+  graphemes
+  |> Enum.group_by(& &1)
+  |> score_from_map.()
+end
+
+get_joker_score = fn hand ->
+  map = Enum.group_by(hand, & &1)
+
+  has_jokers = Map.get(map, 1)
+
+  if has_jokers do
+    rest_map = Map.drop(map, [1])
+    rest_values = Map.values(rest_map)
+    rest_count = Enum.count(rest_values)
+    jokers_count = Enum.count(has_jokers)
+
+    cond do
+      # :five_of_a_kind
+      jokers_count == 5 || jokers_count == 4 ->
+        7
+
+      # :five_of_a_kind
+      jokers_count == 3 && rest_count == 1 ->
+        7
+
+      # :four_of
+      jokers_count == 3 ->
+        6
+
+      # :five_of_a_kind
+      jokers_count == 2 && rest_count == 1 ->
+        7
+
+      # :four_of
+      jokers_count == 2 && rest_count == 2 ->
+        6
+
+      # :three_of_kinds
+      jokers_count == 2 ->
+        4
+
+      # :five_of
+      jokers_count == 1 && rest_count == 1 ->
+        7
+
+      # 1,3; 2,2; 3,1;
+      jokers_count == 1 && rest_count == 2 &&
+          Enum.map(rest_values, &Enum.count/1) |> Enum.max() == 3 ->
+        6
+
+      # :full_house 1,3; 2,2; 3,1;
+      jokers_count == 1 && rest_count == 2 ->
+        5
+
+      # :three_of_kind one has two -> XJJ, Y, Z
+      jokers_count == 1 && rest_count == 3 ->
+        4
+
+      # :one_pair
+      true ->
+        2
+    end
+  else
+    score_from_map.(map)
+  end
+end
+
+parse_for_part_one = fn input ->
+  input
+  |> Enum.map(&String.split(&1, " "))
+  |> Enum.map(fn [h, b] -> [parse_hand.(h), String.to_integer(b), get_score.(parse_hand.(h))] end)
+end
+
+parse_for_part_two = fn input ->
+  input
+  |> Enum.map(&String.split(&1, " "))
+  |> Enum.map(fn [h, b] ->
+    hand = parse_hand_joker.(h, true)
+    [hand, String.to_integer(b), get_joker_score.(hand)]
+  end)
+end
+
+parse_for_part_two.(test_input)
+```
+
+## Part One
+
+```elixir
+sorter = fn [ah, _ab, a_score], [bh, _bb, b_score] ->
+  if a_score == b_score, do: ah < bh, else: a_score < b_score
+end
+
+map_to_rank = fn lst ->
+  lst
+  |> Enum.with_index(1)
+  |> Enum.map(fn {[_h, bid, _s], i} -> i * bid end)
+  |> Enum.sum()
+end
+
+part_one = fn input ->
+  input
+  |> parse_for_part_one.()
+  |> Enum.sort(&sorter.(&1, &2))
+  |> map_to_rank.()
+end
+
+IO.inspect(part_one.(test_input) == 6440, label: "test part one")
+
+part_one.(input)
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> parse_for_part_two.()
+  |> Enum.sort(&sorter.(&1, &2))
+  |> map_to_rank.()
+end
+
+part_two.(test_input) == 5905
+
+part_two.(input)
+```

@@ -174,4 +174,3 @@ IO.inspect(part_two.(test_input) == 46, label: "Smoke test part one")
 part_two.(input)
 ```
 
-[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
