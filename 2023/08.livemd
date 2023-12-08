@@ -39,15 +39,12 @@ XXX = (XXX, XXX)" |> String.split("\n")
 parse = fn input ->
   directions =
     input
-    # |> Stream.take(1)
     |> Enum.at(0)
     |> String.graphemes()
 
   network =
     input
     |> Stream.drop(2)
-    # |> Stream.map(fn line -> String.split(line, ~r/[ = \(\, |\"\, ]/, trim: true) end)
-    # |> Stream.with_index |> Stream.map(fn {line, i} -> Regex.scan(~r/\w\w\w/, line) |> Enum.map(&Enum.at(&1, 0)) |> then(& [i | &1]) end)
     |> Stream.map(fn line -> Regex.scan(~r/\w\w\w/, line) |> Enum.map(&Enum.at(&1, 0)) end)
     |> Enum.reduce(Map.new(), fn [key | value], map -> Map.put(map, key, value) end)
 
@@ -62,9 +59,8 @@ parse.(test_input) |> elem(1) |> Enum.to_list()
 ```elixir
 defmodule PartOne do
   def find_index(directions, i) do
-    count = Enum.count(directions)
-    # if i >= count, do: i - count*trunc(i/count), else: i
-    if i >= count, do: rem(i, count), else: i
+    max_count = Enum.count(directions)
+    if i >= max_count, do: rem(i, max_count), else: i
   end
 
   def find_next(network, directions, key, i) do
@@ -85,25 +81,13 @@ part_one = fn input ->
     |> parse.()
 
   PartOne.find_next(network, directions, "AAA", 0)
-  #   |> Stream.map(fn [i | rest] ->
-  #     count = Enum.count(directions)
-  #     index = if i >= count, do: i - count*trunc(i/count), else: i
-  #     # IO.inspect(index)
-  #     [Enum.at(directions, index) | rest]
-  #   end)
-  #   |> Enum.reduce_while("AAA", fn [dir | [res, l, r]], curr ->
-  #     cond do 
-  #       curr != res -> {:cont, curr} # [dir, res, l, r]
-  #       dir == "R" -> {:halt, r}
-  #       dir == "L" -> {:halt, l}
-  #       true -> {:cont, curr}
-  #     end
-  # end)
-  # |> Enum.to_list
 end
 
-part_one.(test_input) == 2 &&
-  part_one.(test_input2) == 6
+IO.inspect(
+  part_one.(test_input) == 2 &&
+    part_one.(test_input2) == 6,
+  label: "Smoke test part one"
+)
 
 part_one.(input)
 ```
@@ -111,44 +95,7 @@ part_one.(input)
 ## Part Two
 
 ```elixir
-defmodule PartTwo do
-  def find_next(network, directions, start, i) do
-    if Enum.all?(start, fn {_key, state} -> state == :found end) do
-      raise "found"
-    end
-
-    dir = Enum.at(directions, PartOne.find_index(directions, i))
-
-    if dir != "R" && dir != "L" do
-      raise "oh no"
-    end
-
-    nexts =
-      start
-      |> Enum.map(fn {key, _value} -> find_next_keys(network, key, dir) end)
-
-    if Enum.all?(nexts, fn {_key, state} -> state == :found end) do
-      i
-    else
-      find_next(network, directions, nexts, i + 1)
-    end
-  end
-
-  def find_next_keys(network, key, dir) do
-    [l, r] = Map.get(network, key)
-    next = if dir == "R", do: r, else: l
-
-    if String.ends_with?(key, "Z") do
-      {next, :found}
-    else
-      if key == r && key == l && next == key do
-        raise "ohhhhh"
-      end
-
-      {next, :next}
-    end
-  end
-
+defmodule MathUtils do
   def lcm(curr, nil), do: curr
   def lcm(0, 0), do: 0
   def lcm(a, b), do: round(a * b / Integer.gcd(a, b))
@@ -163,12 +110,15 @@ part_two = fn input ->
   |> Map.filter(&String.ends_with?(elem(&1, 0), "A"))
   |> Enum.map(&elem(&1, 0))
   |> Enum.map(&PartOne.find_next(network, directions, &1, 0))
-  |> Enum.reduce(&PartTwo.lcm/2)
+  |> Enum.reduce(&MathUtils.lcm/2)
 end
 
-part_two.(test_input3) == 6 &&
-  part_two.(test_input2) == 6 &&
-  part_two.(test_input) == 2
+IO.inspect(
+  part_two.(test_input3) == 6 &&
+    part_two.(test_input2) == 6 &&
+    part_two.(test_input) == 2,
+  label: "Smoke test part two"
+)
 
 part_two.(input)
 ```
