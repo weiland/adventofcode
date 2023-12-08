@@ -1,0 +1,174 @@
+# Day 8: Haunted Wasteland – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/08.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input = "RL
+
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)" |> String.split("\n")
+
+test_input2 = "LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)" |> String.split("\n")
+
+test_input3 = "LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)" |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+parse = fn input ->
+  directions =
+    input
+    # |> Stream.take(1)
+    |> Enum.at(0)
+    |> String.graphemes()
+
+  network =
+    input
+    |> Stream.drop(2)
+    # |> Stream.map(fn line -> String.split(line, ~r/[ = \(\, |\"\, ]/, trim: true) end)
+    # |> Stream.with_index |> Stream.map(fn {line, i} -> Regex.scan(~r/\w\w\w/, line) |> Enum.map(&Enum.at(&1, 0)) |> then(& [i | &1]) end)
+    |> Stream.map(fn line -> Regex.scan(~r/\w\w\w/, line) |> Enum.map(&Enum.at(&1, 0)) end)
+    |> Enum.reduce(Map.new(), fn [key | value], map -> Map.put(map, key, value) end)
+
+  {directions, network}
+end
+
+parse.(test_input) |> elem(1) |> Enum.to_list()
+```
+
+## Part One
+
+```elixir
+defmodule PartOne do
+  def find_index(directions, i) do
+    count = Enum.count(directions)
+    # if i >= count, do: i - count*trunc(i/count), else: i
+    if i >= count, do: rem(i, count), else: i
+  end
+
+  def find_next(network, directions, key, i) do
+    if String.ends_with?(key, "Z") do
+      i
+    else
+      dir = Enum.at(directions, find_index(directions, i))
+      [l, r] = Map.get(network, key)
+      next = if dir == "R", do: r, else: l
+      find_next(network, directions, next, i + 1)
+    end
+  end
+end
+
+part_one = fn input ->
+  {directions, network} =
+    input
+    |> parse.()
+
+  PartOne.find_next(network, directions, "AAA", 0)
+  #   |> Stream.map(fn [i | rest] ->
+  #     count = Enum.count(directions)
+  #     index = if i >= count, do: i - count*trunc(i/count), else: i
+  #     # IO.inspect(index)
+  #     [Enum.at(directions, index) | rest]
+  #   end)
+  #   |> Enum.reduce_while("AAA", fn [dir | [res, l, r]], curr ->
+  #     cond do 
+  #       curr != res -> {:cont, curr} # [dir, res, l, r]
+  #       dir == "R" -> {:halt, r}
+  #       dir == "L" -> {:halt, l}
+  #       true -> {:cont, curr}
+  #     end
+  # end)
+  # |> Enum.to_list
+end
+
+part_one.(test_input) == 2 &&
+  part_one.(test_input2) == 6
+
+part_one.(input)
+```
+
+## Part Two
+
+```elixir
+defmodule PartTwo do
+  def find_next(network, directions, start, i) do
+    if Enum.all?(start, fn {_key, state} -> state == :found end) do
+      raise "found"
+    end
+
+    dir = Enum.at(directions, PartOne.find_index(directions, i))
+
+    if dir != "R" && dir != "L" do
+      raise "oh no"
+    end
+
+    nexts =
+      start
+      |> Enum.map(fn {key, _value} -> find_next_keys(network, key, dir) end)
+
+    if Enum.all?(nexts, fn {_key, state} -> state == :found end) do
+      i
+    else
+      find_next(network, directions, nexts, i + 1)
+    end
+  end
+
+  def find_next_keys(network, key, dir) do
+    [l, r] = Map.get(network, key)
+    next = if dir == "R", do: r, else: l
+
+    if String.ends_with?(key, "Z") do
+      {next, :found}
+    else
+      if key == r && key == l && next == key do
+        raise "ohhhhh"
+      end
+
+      {next, :next}
+    end
+  end
+
+  def lcm(curr, nil), do: curr
+  def lcm(0, 0), do: 0
+  def lcm(a, b), do: round(a * b / Integer.gcd(a, b))
+end
+
+part_two = fn input ->
+  {directions, network} =
+    input
+    |> parse.()
+
+  network
+  |> Map.filter(&String.ends_with?(elem(&1, 0), "A"))
+  |> Enum.map(&elem(&1, 0))
+  |> Enum.map(&PartOne.find_next(network, directions, &1, 0))
+  |> Enum.reduce(&PartTwo.lcm/2)
+end
+
+part_two.(test_input3) == 6 &&
+  part_two.(test_input2) == 6 &&
+  part_two.(test_input) == 2
+
+part_two.(input)
+```
