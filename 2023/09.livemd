@@ -87,3 +87,31 @@ end
 part_two.(test_input) &&
   part_two.(input)
 ```
+
+## Part 1 & 2 without recursion
+
+```elixir
+solve = fn input, dir ->
+  input
+  |> parse_input.()
+  |> Enum.reduce(0, fn line, sum ->
+    sum +
+      Enum.reduce_while(line, [line, []], fn _curr, [next, acc] ->
+        next_acc = [Enum.at(next, dir) | acc]
+
+        if Enum.group_by(next, & &1) |> Enum.count() == 1 do
+          {:halt, Enum.reduce(next_acc, if(dir == 0, do: &-/2, else: &+/2))}
+        else
+          {:cont,
+           [Enum.chunk_every(next, 2, 1, :discard) |> Enum.map(fn [a, b] -> b - a end), next_acc]}
+        end
+      end)
+  end)
+end
+
+solve.(test_input, -1) == 114 &&
+  solve.(input, -1) |> IO.inspect(label: "Part one")
+
+solve.(test_input, 0) == 2 &&
+  solve.(input, 0) |> IO.inspect(label: "Part two")
+```
