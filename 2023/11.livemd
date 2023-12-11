@@ -51,18 +51,20 @@ parse = fn input ->
     end)
     |> elem(0)
 
-  # for {row, y} <- Enum.with_index(rows), {value, x} <- Enum.with_index(row),
-  #   into: %{}, do: {{x, y}, value} |> Map.reject(fn {_key, value} -> value == "." end)
+  # Enum.reduce(Enum.with_index(rows), Map.new(), fn {row, y}, map ->
+  #   Enum.reduce(Enum.with_index(row), map, fn
+  #     {".", _x}, acc -> acc
+  #     {value, x}, acc -> Map.put(acc, {x, y}, value)
+  #   end)
+  # end)
 
-  map =
-    Enum.reduce(Enum.with_index(rows), Map.new(), fn {row, y}, map ->
-      Enum.reduce(Enum.with_index(row), map, fn
-        {".", _x}, acc -> acc
-        {value, x}, acc -> Map.put(acc, {x, y}, value)
-      end)
-    end)
-
-  map
+  for(
+    {row, y} <- Enum.with_index(rows),
+    {value, x} <- Enum.with_index(row),
+    into: %{},
+    do: {{x, y}, value}
+  )
+  |> Map.reject(fn {_key, value} -> value == "." end)
 end
 
 parse.(test_input)
@@ -72,29 +74,24 @@ parse.(test_input)
 
 ```elixir
 to_paths = fn map ->
-  paths =
-    Enum.reduce(map, [], fn {{x1, y1}, a}, lst ->
-      [
-        Enum.map(map, fn {{x2, y2}, b} ->
-          length = abs(x1 - x2) + abs(y1 - y2)
-          {a, b, length}
-        end)
-        | lst
-      ]
-    end)
-    |> List.flatten()
-    |> Enum.reject(fn {_, _, v} -> v == 0 end)
-
-  paths
-  # |> Enum.reject(fn {x, y, v} -> Enum.find(paths, nil, fn e -> e == {y, x, v} end) != nil end)
-  # |> Enum.sort(fn {_, _, v1}, {_, _, v2} -> v1 < v2 end)
+  Enum.reduce(map, [], fn {{x1, y1}, a}, lst ->
+    [
+      Enum.map(map, fn {{x2, y2}, b} ->
+        length = abs(x1 - x2) + abs(y1 - y2)
+        {a, b, length}
+      end)
+      | lst
+    ]
+  end)
+  |> List.flatten()
+  |> Enum.reject(fn {_, _, v} -> v == 0 end)
 end
 
 part_one = fn input ->
   input |> parse.() |> to_paths.() |> Enum.map(&elem(&1, 2)) |> Enum.sum() |> div(2)
 end
 
-part_one.(test_input) &&
+part_one.(test_input) == 374 &&
   part_one.(input)
 ```
 
@@ -102,11 +99,48 @@ part_one.(test_input) &&
 
 ```elixir
 part_two = fn input ->
-  input
-  |> Enum.to_list()
+  mat = input |> Enum.map(&String.graphemes/1)
+
+  {empty_rows, empty_cols, galaxies} =
+    mat
+    |> Enum.with_index()
+    |> Enum.reduce(
+      {0..(Enum.count(mat) - 1), 0..(Enum.count(Enum.at(mat, 0)) - 1), []},
+      fn {line, row}, {r, c, g} ->
+        line
+        |> Enum.with_index()
+        |> Enum.reduce({r, c, g}, fn {ch, col}, {r, c, g} ->
+          if ch == "#" do
+            {Enum.reject(r, &(&1 == row)), Enum.reject(c, &(&1 == col)), [{row, col} | g]}
+          else
+            {r, c, g}
+          end
+        end)
+      end
+    )
+
+  diff = 999_999
+
+  expanded =
+    galaxies
+    |> Enum.map(fn {row, col} ->
+      {empty_rows |> Enum.filter(&(&1 <= row)) |> Enum.count() |> then(&(&1 * diff + row)),
+       empty_cols |> Enum.filter(&(&1 <= col)) |> Enum.count() |> then(&(&1 * diff + col))}
+    end)
+
+  expanded
+  |> Enum.drop(-1)
+  |> Enum.with_index(1)
+  |> Enum.map(fn {a, i} ->
+    expanded
+    |> Enum.drop(i)
+    |> Enum.reduce(0, fn b, acc ->
+      acc + abs(elem(b, 0) - elem(a, 0)) + abs(elem(b, 1) - elem(a, 1))
+    end)
+  end)
+  |> Enum.sum()
 end
 
-part_two.(test_input)
+part_two.(test_input) &&
+  part_two.(input)
 ```
-
-[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
