@@ -1,0 +1,112 @@
+# Day 11: Cosmic Expansion – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/11.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input = "...#......
+.......#..
+#.........
+..........
+......#...
+.#........
+.........#
+..........
+.......#..
+#...#....." |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+duplicate_empty_rows = fn old_rows ->
+  old_rows
+  |> Enum.with_index()
+  |> Enum.reduce({old_rows, 0}, fn {row, index}, {rows, offset} ->
+    if Enum.all?(row, &(&1 == ".")) do
+      {List.insert_at(rows, index + offset, row), offset + 1}
+    else
+      {rows, offset}
+    end
+  end)
+  |> elem(0)
+end
+
+parse = fn input ->
+  rows =
+    input
+    |> Enum.map(&String.graphemes/1)
+    |> duplicate_empty_rows.()
+    # transpose cols to rows
+    |> Enum.zip_with(&Function.identity/1)
+    |> duplicate_empty_rows.()
+    # transpose back to rows
+    |> Enum.zip_with(&Function.identity/1)
+    |> Enum.map_reduce(0, fn row, row_count ->
+      Enum.map_reduce(row, row_count, fn
+        "#", count -> {count + 1, count + 1}
+        ".", count -> {".", count}
+      end)
+    end)
+    |> elem(0)
+
+  # for {row, y} <- Enum.with_index(rows), {value, x} <- Enum.with_index(row),
+  #   into: %{}, do: {{x, y}, value} |> Map.reject(fn {_key, value} -> value == "." end)
+
+  map =
+    Enum.reduce(Enum.with_index(rows), Map.new(), fn {row, y}, map ->
+      Enum.reduce(Enum.with_index(row), map, fn
+        {".", _x}, acc -> acc
+        {value, x}, acc -> Map.put(acc, {x, y}, value)
+      end)
+    end)
+
+  map
+end
+
+parse.(test_input)
+```
+
+## Part One
+
+```elixir
+to_paths = fn map ->
+  paths =
+    Enum.reduce(map, [], fn {{x1, y1}, a}, lst ->
+      [
+        Enum.map(map, fn {{x2, y2}, b} ->
+          length = abs(x1 - x2) + abs(y1 - y2)
+          {a, b, length}
+        end)
+        | lst
+      ]
+    end)
+    |> List.flatten()
+    |> Enum.reject(fn {_, _, v} -> v == 0 end)
+
+  paths
+  # |> Enum.reject(fn {x, y, v} -> Enum.find(paths, nil, fn e -> e == {y, x, v} end) != nil end)
+  # |> Enum.sort(fn {_, _, v1}, {_, _, v2} -> v1 < v2 end)
+end
+
+part_one = fn input ->
+  input |> parse.() |> to_paths.() |> Enum.map(&elem(&1, 2)) |> Enum.sum() |> div(2)
+end
+
+part_one.(test_input) &&
+  part_one.(input)
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> Enum.to_list()
+end
+
+part_two.(test_input)
+```
+
+[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
