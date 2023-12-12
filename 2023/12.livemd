@@ -1,0 +1,105 @@
+# Day 12: Hot springs – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/12.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input = "???.### 1,1,3
+.??..??...?##. 1,1,3
+?#?#?#?#?#?#?#? 1,3,1,6
+????.#...#... 4,1,1
+????.######..#####. 1,6,5
+?###???????? 3,2,1" |> String.split("\n")
+
+correct_test_input = "#.#.### 1,1,3
+.#...#....###. 1,1,3
+.#.###.#.###### 1,3,1,6
+####.#...#... 4,1,1
+#....######..#####. 1,6,5
+.###.##....# 3,2,1" |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+unfold = fn input, times ->
+  input
+  |> Enum.map(&String.split(&1, " "))
+  |> Enum.map(fn [conditions_string, groups_string] ->
+    conditions =
+      1..times |> Enum.map(fn _r -> conditions_string end) |> Enum.join("?") |> String.graphemes()
+
+    groups =
+      groups_string
+      |> String.split(",", trim: true)
+      |> List.duplicate(times)
+      |> List.flatten()
+      |> Enum.map(&String.to_integer/1)
+
+    {conditions, groups}
+  end)
+end
+```
+
+## Part One
+
+```elixir
+defmodule HotSprings do
+  def get_arrangements([], []), do: 1
+  def get_arrangements([], _groups), do: 0
+
+  def get_arrangements(conditions, []) do
+    if Enum.member?(conditions, "#"), do: 0, else: 1
+  end
+
+  def get_arrangements(conditions, groups) do
+    condition = Enum.at(conditions, 0)
+    group = Enum.at(groups, 0)
+
+    # non damaged
+    result =
+      if condition == "." || condition == "?",
+        do: get_arrangements(tl(conditions), groups),
+        else: 0
+
+    # damaged
+    if (condition == "#" || condition == "?") &&
+         group <= Enum.count(conditions) &&
+         !Enum.member?(Enum.slice(conditions, 0, group), ".") &&
+         (group == Enum.count(conditions) || Enum.at(conditions, group) != "#") do
+      result + get_arrangements(Enum.drop(conditions, group + 1), tl(groups))
+    else
+      result
+    end
+  end
+
+  # TODO: memoization for part two
+end
+```
+
+```elixir
+part_one = fn input ->
+  input
+  |> unfold.(1)
+  |> Enum.map(fn {r, n} -> HotSprings.get_arrangements(r, n) end)
+  |> Enum.sum()
+end
+
+part_one.(test_input) == 21 &&
+  part_one.(input)
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> unfold.(5)
+  |> Enum.map(fn {conditions, groups} -> HotSprings.get_arrangements(conditions, groups) end)
+  |> Enum.sum()
+end
+
+part_two.(test_input) == 525_152 &&
+  part_two.(input)
+```
