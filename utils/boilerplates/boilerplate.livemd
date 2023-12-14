@@ -3,11 +3,10 @@
 ```elixir
 input =
   File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/NN.txt")
-  #|> Stream.map(&String.trim/1)
+  |> Stream.map(&String.trim/1)
 
 test_input =
-  ""
-  |> String.split("\n")
+  "" |> String.split("\n")
 ```
 
 ## Parsing
@@ -16,6 +15,8 @@ test_input =
 parse = fn input ->
   input
 end
+
+parse.(test_input)
 ```
 
 ## Part One
@@ -40,5 +41,3 @@ end
 
 part_two.(test_input)
 ```
-
-[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
