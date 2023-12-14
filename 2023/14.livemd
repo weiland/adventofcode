@@ -74,37 +74,65 @@ part_one.(test_input) == 136 &&
 ## Part Two
 
 ```elixir
-part_two = fn input ->
-  input
-  |> parse.()
-  # default -> north
-  # transpose
+cycle = fn lines ->
+  lines
+  # west (start) -> transpose to north
   |> Enum.zip_with(&Function.identity/1)
   # moves 0 to front
   |> shift.()
-  # back to 
-  # transpose
+  # transpose back to west
   |> Enum.zip_with(&Function.identity/1)
-  # to west
-  |> Enum.map(&Enum.reverse/1)
   |> shift.()
-  # back to begin
-  |> Enum.map(&Enum.reverse/1)
-  # to north
-  # transpose
+  # transpose to north
   |> Enum.zip_with(&Function.identity/1)
   # to south
   |> Enum.map(&Enum.reverse/1)
   |> shift.()
-  # 
+  # back to north
   |> Enum.map(&Enum.reverse/1)
-  # transpose
+  # transpose to west (begin)
   |> Enum.zip_with(&Function.identity/1)
-  |> IO.inspect()
-  # count
-  |> count.()
-  |> Enum.sum()
+  # to east
+  |> Enum.map(&Enum.reverse/1)
+  |> shift.()
+  # back to west (begin)
+  |> Enum.map(&Enum.reverse/1)
 end
 
-part_two.(test_input)
+n_times = 1_000_000_000
+
+part_two = fn input ->
+  lines =
+    input
+    |> parse.()
+
+  configs =
+    1..n_times
+    |> Enum.reduce_while([lines, Map.new()], fn index, [lns, map] ->
+      res = lns |> cycle.()
+
+      {_, has} = Map.get(map, res, {nil, nil})
+
+      cond do
+        has == nil -> {:cont, [res, Map.put(map, res, {index, 1})]}
+        has == 1 -> {:cont, [res, Map.put(map, res, {index, 2})]}
+        true -> {:halt, map}
+      end
+    end)
+
+  repeats =
+    configs
+    |> Enum.filter(fn {_k, {_i, v}} -> v == 2 end)
+    |> Enum.sort(fn {_k, {a, _v}}, {_k2, {b, _v2}} -> a < b end)
+    |> Enum.map(fn {k, _count} -> k end)
+
+  offset = Enum.count(configs) - Enum.count(repeats)
+  index = rem(n_times - offset, Enum.count(repeats)) - 1
+
+  Enum.at(repeats, index) |> Enum.zip_with(&Function.identity/1) |> count.() |> Enum.sum()
+end
+
+# &&
+part_two.(test_input) == 64
+part_two.(input)
 ```
