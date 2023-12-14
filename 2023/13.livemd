@@ -1,0 +1,101 @@
+# Day 13: Point of Incidence – Advent of Code 2023
+
+```elixir
+input =
+  File.read!("/Users/pw/src/weiland/adventofcode/2023/input/13.txt")
+
+# |> Stream.map(&String.trim/1)
+
+test_input = "#.##..##.
+..#.##.#.
+##......#
+##......#
+..#.##.#.
+..##..##.
+#.#.##.#.
+
+#...##..#
+#....#..#
+..##..###
+#####.##.
+#####.##.
+..##..###
+#....#..#"
+```
+
+## Parsing
+
+```elixir
+parse = fn input ->
+  input
+  |> String.split("\n\n")
+  |> Enum.map(fn block ->
+    String.split(block, "\n", trim: true) |> Enum.map(&String.graphemes/1)
+  end)
+end
+```
+
+## Part One
+
+```elixir
+count = fn lines, limit ->
+  r_count = Enum.count(lines)
+
+  0..(r_count - 2)
+  |> Enum.reduce_while(nil, fn row, _acc ->
+    chars_off =
+      Enum.slice(lines, 0..row)
+      |> Enum.reverse()
+      |> Enum.zip(Enum.slice(lines, (row + 1)..(r_count - 1)))
+      |> Enum.reduce(0, fn {lst_a, lst_b}, total_chars_off ->
+        count =
+          Enum.zip(lst_a, lst_b)
+          |> Enum.reduce(0, fn {a, b}, acc ->
+            if a == b, do: acc, else: acc + 1
+          end)
+
+        count + total_chars_off
+      end)
+
+    if chars_off != limit, do: {:cont, false}, else: {:halt, row + 1}
+  end)
+end
+
+handle_block = fn rows, chars_off ->
+  cols = rows |> Enum.zip_with(&Function.identity/1)
+
+  rcols = count.(cols, chars_off)
+
+  if rcols != false do
+    rcols
+  else
+    count.(rows, chars_off) * 100
+  end
+end
+```
+
+```elixir
+part_one = fn input ->
+  input
+  |> parse.()
+  |> Enum.map(&handle_block.(&1, 0))
+  |> Enum.sum()
+end
+
+part_one.(test_input) == 405 &&
+  part_one.(input)
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> parse.()
+  |> Enum.map(&handle_block.(&1, 1))
+  |> Enum.sum()
+end
+
+part_two.(test_input) == 400 &&
+  part_two.(input)
+```
