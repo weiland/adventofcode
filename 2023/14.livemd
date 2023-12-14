@@ -1,0 +1,110 @@
+# Day 14: Parabolic Reflector Dish – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/14.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input =
+  "O....#....
+O.OO#....#
+.....##...
+OO.#O....O
+.O.....O#.
+O.#..O.#.#
+..O..#O..O
+.......O..
+#....###..
+#OO..#...." |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+parse = fn input ->
+  input
+  |> Enum.map(&String.graphemes(&1))
+end
+
+parse.(test_input)
+```
+
+## Part One
+
+```elixir
+shift = fn lines ->
+  lines
+  |> Enum.map(fn line ->
+    line
+    |> Enum.chunk_by(&(&1 == "#"))
+    |> Enum.flat_map(&Enum.sort(&1, :desc))
+  end)
+end
+
+count = fn lines ->
+  lines
+  |> Enum.map(fn line ->
+    line
+    |> Enum.reverse()
+    |> Enum.with_index(1)
+    |> Enum.reverse()
+    |> Enum.filter(fn {curr, _i} -> curr == "O" end)
+    |> Enum.map(&elem(&1, 1))
+    |> Enum.reduce(0, &+/2)
+  end)
+end
+
+part_one = fn input ->
+  input
+  |> parse.()
+  # default -> north
+  # transpose
+  |> Enum.zip_with(&Function.identity/1)
+  # moves 0 to front
+  |> shift.()
+  # count
+  |> count.()
+  |> Enum.sum()
+end
+
+part_one.(test_input) == 136 &&
+  part_one.(input)
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> parse.()
+  # default -> north
+  # transpose
+  |> Enum.zip_with(&Function.identity/1)
+  # moves 0 to front
+  |> shift.()
+  # back to 
+  # transpose
+  |> Enum.zip_with(&Function.identity/1)
+  # to west
+  |> Enum.map(&Enum.reverse/1)
+  |> shift.()
+  # back to begin
+  |> Enum.map(&Enum.reverse/1)
+  # to north
+  # transpose
+  |> Enum.zip_with(&Function.identity/1)
+  # to south
+  |> Enum.map(&Enum.reverse/1)
+  |> shift.()
+  # 
+  |> Enum.map(&Enum.reverse/1)
+  # transpose
+  |> Enum.zip_with(&Function.identity/1)
+  |> IO.inspect()
+  # count
+  |> count.()
+  |> Enum.sum()
+end
+
+part_two.(test_input)
+```
