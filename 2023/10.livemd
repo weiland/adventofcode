@@ -1,0 +1,138 @@
+# Day 10: Pipe Maze – Advent of Code 2023
+
+```elixir
+Mix.install([
+  {:topo, "~> 1.0"}
+])
+
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/10.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input = ".....\n.S-7.\n.|.|.\n.L-J.\n....." |> String.split("\n")
+
+test_input2 = "..F7.\n.FJ|.\nSJ.L7\n|F--J\nLJ..." |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+find_neighbors_old = fn tile, x, y ->
+  from_south = [{x, y + 1}, :south_north, :north_east, :north_west]
+  from_north = [{x, y - 1}, :south_north, :south_east, :south_west]
+  to_east = [{x - 1, y}, :east_west, :north_east, :south_east]
+  to_west = [{x + 1, y}, :east_west, :north_west, :south_west]
+
+  case tile do
+    "|" -> [from_north, from_south]
+    "-" -> [to_east, to_west]
+    "L" -> [from_south, to_west]
+    "J" -> [from_south, to_east]
+    "7" -> [from_north, to_east]
+    "F" -> [from_north, to_west]
+    "." -> []
+    "S" -> [to_east, to_west, from_north, from_south]
+    _ -> raise "oh no"
+  end
+end
+
+n = fn {x, y} -> [{x, y - 1}, "|", "7", "F"] end
+e = fn {x, y} -> [{x + 1, y}, "-", "7", "J"] end
+s = fn {x, y} -> [{x, y + 1}, "|", "J", "L"] end
+w = fn {x, y} -> [{x - 1, y}, "-", "F", "L"] end
+
+find_neighbors = fn
+  _, "." -> []
+  p, "S" -> [n.(p), e.(p), s.(p), w.(p)]
+  p, "|" -> [n.(p), s.(p)]
+  p, "-" -> [w.(p), e.(p)]
+  p, "L" -> [n.(p), e.(p)]
+  p, "J" -> [n.(p), w.(p)]
+  p, "7" -> [w.(p), s.(p)]
+  p, "F" -> [e.(p), s.(p)]
+end
+
+add_neighbors = fn map ->
+  map
+  |> Enum.reduce(Map.new(), fn {{x, y}, tile}, new_map ->
+    neighbors =
+      find_neighbors.({x, y}, tile)
+      |> Enum.map(fn [pos | tiles] ->
+        if Enum.member?(["S" | tiles], Map.get(map, pos)) do
+          pos
+        else
+          nil
+        end
+      end)
+      |> Enum.reject(&(&1 == nil))
+
+    Map.put(new_map, {x, y}, {tile, neighbors})
+  end)
+end
+
+parse = fn input ->
+  input
+  |> Stream.with_index()
+  |> Stream.flat_map(fn {line, y} ->
+    String.graphemes(line)
+    |> Stream.with_index()
+    |> Stream.map(fn {c, x} -> {{x, y}, c} end)
+  end)
+  |> then(fn lst -> Map.new(lst) end)
+  |> add_neighbors.()
+  |> then(fn map ->
+    {map, map |> Enum.find(fn {_k, {v, _n}} -> v == "S" end) |> elem(0)}
+  end)
+end
+
+# parse.(test_input2)
+```
+
+## Part One
+
+```elixir
+visit_neighbours = fn {map, start_pos} ->
+  {_, [next, _]} = Map.get(map, start_pos)
+
+  {start_pos, next}
+  |> Stream.iterate(fn {prev, curr} ->
+    {_, [n1, n2]} = Map.get(map, curr)
+    {curr, if(n1 == prev, do: n2, else: n1)}
+  end)
+  |> Stream.map(&elem(&1, 1))
+  |> Enum.take_while(&(&1 != start_pos))
+end
+
+part_one = fn input ->
+  input
+  |> parse.()
+  |> visit_neighbours.()
+  |> length
+  |> Kernel.+(1)
+  |> div(2)
+end
+
+part_one.(test_input) == 4 &&
+  part_one.(test_input2) == 8 &&
+  part_one.(input)
+```
+
+## Part Two
+
+```elixir
+# version two : works (but with external dependency)
+{map, s} = input |> parse.()
+
+neighbours = {map, s} |> visit_neighbours.()
+
+polygon = %Geo.Polygon{coordinates: [neighbours]}
+
+map
+|> Map.keys()
+|> Stream.reject(&Enum.member?(neighbours, &1))
+|> Stream.map(&Topo.contains?(polygon, &1))
+|> Stream.filter(& &1)
+|> Enum.count()
+```
+
+[New Livebook](http://localhost:57389/import?url=https%3A%2F%2Fgithub.com%2Fweiland%2Fadventofcode%2Fblob%2Fmain%2Futils%2Fboilerplates%2Fboilerplate.livemd)
