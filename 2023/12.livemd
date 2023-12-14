@@ -27,15 +27,14 @@ unfold = fn input, times ->
   input
   |> Enum.map(&String.split(&1, " "))
   |> Enum.map(fn [conditions_string, groups_string] ->
-    conditions =
-      1..times |> Enum.map(fn _r -> conditions_string end) |> Enum.join("?") |> String.graphemes()
+    conditions = List.duplicate(conditions_string, times) |> Enum.join("?") |> String.graphemes()
 
     groups =
       groups_string
-      |> String.split(",", trim: true)
+      |> String.split(",")
+      |> Enum.map(&String.to_integer/1)
       |> List.duplicate(times)
       |> List.flatten()
-      |> Enum.map(&String.to_integer/1)
 
     {conditions, groups}
   end)
@@ -97,7 +96,7 @@ part_two = fn input ->
   input
   |> unfold.(5)
   |> Enum.map(fn {conditions, groups} -> HotSprings.get_arrangements(conditions, groups) end)
-  |> Enum.sum()
+  |> Enum.sum
 end
 
 part_two.(test_input) == 525_152 &&
