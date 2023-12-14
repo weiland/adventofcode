@@ -86,7 +86,7 @@ part_one = fn input ->
 end
 
 part_one.(test_input) == 21 &&
-  part_one.(input)
+part_one.(input)
 ```
 
 ## Part Two
@@ -99,6 +99,6 @@ part_two = fn input ->
   |> Enum.sum
 end
 
-part_two.(test_input) == 525_152 &&
-  part_two.(input)
+part_two.(test_input) == 525152
+part_two.(input) 
 ```

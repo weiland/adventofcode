@@ -1,34 +1,216 @@
 <!-- livebook:{"autosave_interval_s":30} -->
 
-# [WIP]: Day 10: Cathode-Ray Tube -- AoC 22
+# Day 10: Cathode-Ray Tube -- AoC 22
 
 ```elixir
-stream = File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/10.txt")
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2022/input/10.txt")
+
+test_input = "addx 15
+addx -11
+addx 6
+addx -3
+addx 5
+addx -1
+addx -8
+addx 13
+addx 4
+noop
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx -35
+addx 1
+addx 24
+addx -19
+addx 1
+addx 16
+addx -11
+noop
+noop
+addx 21
+addx -15
+noop
+noop
+addx -3
+addx 9
+addx 1
+addx -3
+addx 8
+addx 1
+addx 5
+noop
+noop
+noop
+noop
+noop
+addx -36
+noop
+addx 1
+addx 7
+noop
+noop
+noop
+addx 2
+addx 6
+noop
+noop
+noop
+noop
+noop
+addx 1
+noop
+noop
+addx 7
+addx 1
+noop
+addx -13
+addx 13
+addx 7
+noop
+addx 1
+addx -33
+noop
+noop
+noop
+addx 2
+noop
+noop
+noop
+addx 8
+noop
+addx -1
+addx 2
+addx 1
+noop
+addx 17
+addx -9
+addx 1
+addx 1
+addx -3
+addx 11
+noop
+noop
+addx 1
+noop
+addx 1
+noop
+noop
+addx -13
+addx -19
+addx 1
+addx 3
+addx 26
+addx -30
+addx 12
+addx -1
+addx 3
+addx 1
+noop
+noop
+noop
+addx -9
+addx 18
+addx 1
+addx 2
+noop
+noop
+addx 9
+noop
+noop
+noop
+addx -1
+addx 2
+addx -37
+addx 1
+addx 3
+noop
+addx 15
+addx -21
+addx 22
+addx -6
+addx 1
+noop
+addx 2
+addx 1
+noop
+addx -10
+noop
+noop
+addx 20
+addx 1
+addx 2
+addx 2
+addx -6
+addx -11
+noop
+noop
+noop" |> String.split("\n", trim: true)
 ```
 
 ## Part One
 
 ```elixir
-input =
-  stream
+parse = fn input ->
+  input
   |> Stream.map(&String.trim/1)
-  |> Stream.map(&String.split(&1, " "))
   |> Stream.map(fn line ->
-    if length(line) == 2, do: String.to_integer(Enum.at(line, 1)), else: :noop
+    Regex.scan(~r/(-?)\d+/, line)
+    |> List.flatten()
+    |> Enum.at(0, :noop)
+    |> then(fn v -> if v == :noop, do: :noop, else: String.to_integer(v) end)
   end)
-  |> Stream.with_index(1)
+end
+
+parse.(test_input) |> Enum.to_list()
 ```
 
 ```elixir
 cycles = [20, 60, 100, 140, 180, 220]
 
-input
-# |> Stream.map
+convert_to_map = fn input ->
+  input
+  |> Enum.reduce([1, 1, Map.new()], fn curr, [x, cycle, map] ->
+    map = Map.put(map, cycle, x)
+
+    if curr == :noop do
+      [x, cycle + 1, map]
+    else
+      [x + curr, cycle + 2, Map.put(map, cycle + 1, x)]
+    end
+  end)
+  |> Enum.at(2)
+end
+
+part_one = fn input ->
+  input
+  |> parse.()
+  |> convert_to_map.()
+  |> Map.take(cycles)
+  |> Enum.map(fn {i, x} -> i * x end)
+  |> Enum.sum()
+end
+
+part_one.(input)
 ```
 
 ## Part Two
 
 ```elixir
-stream
-|> Enum.to_list()
+input
+|> parse.()
+|> convert_to_map.()
+|> Enum.sort_by(&elem(&1, 0))
+|> Enum.map(fn {cycle, value} ->
+  if rem(cycle, 40) in (value - 1)..(value + 1), do: "#", else: " "
+end)
+|> Enum.chunk_every(40)
+|> Enum.map(&Enum.join(&1, ""))
+|> IO.inspect()
 ```
