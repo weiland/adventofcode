@@ -77,7 +77,7 @@ part_two = fn input ->
     {:add, box, label, flen}, map ->
       lst = Map.get(map, box, [])
 
-      if Enum.count(lst, fn {l, _i} -> l == label end) == 1 do
+      if Enum.find(lst, fn {l, _i} -> l == label end) != nil do
         updated = Enum.map(lst, fn {l, i} -> if l == label, do: {l, flen}, else: {l, i} end)
         Map.put(map, box, updated)
       else
@@ -89,13 +89,14 @@ part_two = fn input ->
       updated = Enum.reject(lst, fn {l, _i} -> l == label end)
       Map.put(map, box, updated)
   end)
-  # |> Enum.with_index(1)
-  |> Enum.reduce(0, fn {box, lst}, acc ->
-    acc +
-      Enum.reduce(lst |> Enum.with_index(1), 0, fn {{_l, f}, i}, a ->
-        a + (box + 1) * (f * i)
-      end)
+  |> Enum.map(fn {box, lst} ->
+    lst
+    |> Enum.with_index(1)
+    |> Enum.reduce(0, fn {{_l, focal_length}, i}, acc ->
+      (box + 1) * i * focal_length + acc
+    end)
   end)
+  |> Enum.sum()
 end
 
 part_two.(test_input) == 145 &&
