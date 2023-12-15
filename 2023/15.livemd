@@ -3,44 +3,27 @@
 ```elixir
 input =
   File.read!("/Users/pw/src/weiland/adventofcode/2023/input/15.txt")
-  # remove new lines
-  |> String.replace("\n", "")
+  |> String.trim()
+  |> String.split(",")
 
-test_input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7"
+test_input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7" |> String.split(",")
 ```
 
 ## Parsing
 
-```elixir
-parse = fn input ->
-  input
-  |> String.split(",")
-  |> Enum.map(&String.to_charlist/1)
-end
-
-parse.(test_input)
-```
-
 ## Part One
 
 ```elixir
-hash = fn char_list ->
-  char_list
-  |> Enum.reduce(0, fn curr, acc ->
-    acc
-    |> Kernel.+(curr)
-    |> Kernel.*(17)
-    |> rem(256)
-  end)
+hash = fn string ->
+  String.to_charlist(string) |> Enum.reduce(0, &rem((&1 + &2) * 17, 256))
 end
 
-hash.(String.to_charlist("HASH")) == 52
+hash.("HASH") == 52
 ```
 
 ```elixir
 part_one = fn input ->
   input
-  |> parse.()
   |> Enum.map(&hash.(&1))
   |> Enum.sum()
 end
@@ -52,16 +35,16 @@ part_one.(test_input) == 1320 &&
 ## Part Two
 
 ```elixir
+# unused now
 parse_two = fn input ->
   input
-  |> String.split(",")
   |> Enum.map(fn line ->
-    if String.contains?(line, "=") do
-      [label, flen] = String.split(line, "=")
-      {:add, hash.(String.to_charlist(label)), label, String.to_integer(flen)}
+    [label, flen] = String.split(line, ~r/[-=]/)
+
+    if flen != "" do
+      {:add, hash.(label), label, String.to_integer(flen)}
     else
-      label = String.replace(line, "-", "")
-      {:remove, hash.(String.to_charlist(label)), label}
+      {:remove, hash.(label), label}
     end
   end)
 end
@@ -72,29 +55,29 @@ parse_two.(test_input)
 ```elixir
 part_two = fn input ->
   input
-  |> parse_two.()
-  |> Enum.reduce(Map.new(), fn
-    {:add, box, label, flen}, map ->
-      lst = Map.get(map, box, [])
+  |> Enum.reduce(Map.new(), fn line, map ->
+    [label, flen] = String.split(line, ~r/[-=]/)
+    box = hash.(label)
+    lst = Map.get(map, box, [])
 
-      if Enum.find(lst, fn {l, _i} -> l == label end) != nil do
-        updated = Enum.map(lst, fn {l, i} -> if l == label, do: {l, flen}, else: {l, i} end)
-        Map.put(map, box, updated)
-      else
-        Map.put(map, box, lst ++ [{label, flen}])
-      end
+    if flen == "" do
+      Map.put(map, box, Enum.reject(lst, fn {l, _i} -> l == label end))
+    else
+      flen = String.to_integer(flen)
 
-    {:remove, box, label}, map ->
-      lst = Map.get(map, box, [])
-      updated = Enum.reject(lst, fn {l, _i} -> l == label end)
+      updated =
+        if Enum.find(lst, fn {l, _i} -> l == label end),
+          do: Enum.map(lst, fn {l, i} -> if l == label, do: {l, flen}, else: {l, i} end),
+          else: lst ++ [{label, flen}]
+
       Map.put(map, box, updated)
+    end
   end)
   |> Enum.map(fn {box, lst} ->
-    lst
-    |> Enum.with_index(1)
-    |> Enum.reduce(0, fn {{_l, focal_length}, i}, acc ->
-      (box + 1) * i * focal_length + acc
+    Enum.with_index(lst, fn {_l, focal_length}, i ->
+      (box + 1) * (i + 1) * focal_length
     end)
+    |> Enum.sum()
   end)
   |> Enum.sum()
 end
