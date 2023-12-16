@@ -1,0 +1,146 @@
+# Day 16: The Floor Will Be Lava – Advent of Code 2023
+
+```elixir
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/16.txt")
+  |> Stream.map(&String.trim/1)
+
+# backslash fun
+_test_input =
+  ".|...\\....
+|.-.\.....
+.....|-...
+........|.
+..........
+.........\
+..../.\\..
+.-.-/..|..
+.|....-|.\
+..//.|...." |> String.split("\n")
+
+test_input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/16_test.txt")
+  |> Stream.map(&String.trim/1)
+```
+
+## Parsing
+
+```elixir
+parse_old = fn input ->
+  input
+  |> Stream.map(fn line -> String.codepoints(line) end)
+  |> Stream.with_index()
+  |> Enum.reduce(Map.new(), fn {points, y}, map ->
+    points =
+      points
+      |> Enum.map(fn
+        "." -> :p
+        "\\" -> :se
+        "/" -> :ne
+        "|" -> :v
+        "-" -> :h
+        other -> raise other
+      end)
+
+    Enum.with_index(points)
+    |> Enum.reduce(map, fn {point, x}, m ->
+      Map.put(m, {x, y}, point)
+    end)
+    |> Map.merge(map)
+  end)
+end
+
+# create a grid
+parse = fn input ->
+  input
+  |> Stream.map(fn line -> String.codepoints(line) end)
+  |> Stream.with_index()
+  |> Enum.reduce(Map.new(), fn {points, y}, map ->
+    Enum.with_index(points)
+    |> Enum.reduce(map, fn {point, x}, m ->
+      Map.put(m, {x, y}, point)
+    end)
+    |> Map.merge(map)
+  end)
+end
+
+parse.(test_input) |> Enum.sort()
+```
+
+## Part One
+
+```elixir
+defmodule T do
+  def walk([], _map, seen) do
+    seen
+  end
+
+  def walk([curr = {coords, dir} | rest], map, seen) do
+    if Enum.member?(seen, curr) do
+      walk(rest, map, seen)
+    else
+      item = map[coords]
+
+      possibs =
+        case {item, dir} do
+          {"-", d} when d in [:s, :n] -> [next(coords, :w), next(coords, :e)]
+          {"|", d} when d in [:e, :w] -> [next(coords, :n), next(coords, :s)]
+          {"/", _} -> [next(coords, mirr(dir, item))]
+          {"\\", _} -> [next(coords, mirr(dir, item))]
+          _ -> [next(coords, dir)]
+        end
+        |> Enum.reject(fn c -> map[elem(c, 0)] == nil end)
+
+      walk(rest ++ possibs, map, [curr | seen])
+    end
+  end
+
+  def next({x, y}, :e), do: {{x + 1, y}, :e}
+  def next({x, y}, :w), do: {{x - 1, y}, :w}
+  def next({x, y}, :n), do: {{x, y - 1}, :n}
+  def next({x, y}, :s), do: {{x, y + 1}, :s}
+
+  def mirr(:e, "/"), do: :n
+  def mirr(:s, "/"), do: :w
+  def mirr(:w, "/"), do: :s
+  def mirr(:n, "/"), do: :e
+
+  # south east \
+  def mirr(:e, "\\"), do: :s
+  def mirr(:s, "\\"), do: :e
+  def mirr(:w, "\\"), do: :n
+  def mirr(:n, "\\"), do: :w
+
+  def mirr(curr, _mir), do: curr
+
+  def part_one(map, start, dir) do
+    walk([{start, dir}], map, [])
+    |> Enum.map(&elem(&1, 0))
+    |> Enum.uniq()
+    |> Enum.count()
+  end
+end
+
+T.part_one(test_input |> parse.(), {0, 0}, :e) == 46
+T.part_one(input |> parse.(), {0, 0}, :e)
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  map = input |> parse.()
+
+  {_, {max_x, max_y}} = Map.keys(map) |> Enum.min_max_by(&Function.identity/1)
+
+  0..max_y
+  |> Enum.flat_map(fn i -> [{0, i, :e}, {max_x, i, :w}] end)
+  |> Enum.concat(Enum.flat_map(1..(max_x - 1), fn i -> [{i, 0, :s}, {i, max_y, :n}] end))
+  |> Enum.map(fn {x, y, d} -> T.part_one(map, {x, y}, d) end)
+  |> Enum.max()
+end
+
+# &&
+part_two.(test_input) == 51
+part_two.(input)
+```
