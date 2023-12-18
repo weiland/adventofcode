@@ -1,0 +1,121 @@
+# Day 18: Lavaduct Lagoon – Advent of Code 2023
+
+```elixir
+Mix.install([{:topo, "~> 1.0"}])
+
+input =
+  File.stream!("/Users/pw/src/weiland/adventofcode/2023/input/18.txt")
+  |> Stream.map(&String.trim/1)
+
+test_input =
+  "R 6 (#70c710)
+D 5 (#0dc571)
+L 2 (#5713f0)
+D 2 (#d2c081)
+R 2 (#59c680)
+D 2 (#411b91)
+L 5 (#8ceee2)
+U 2 (#caa173)
+L 1 (#1b58a2)
+U 2 (#caa171)
+R 2 (#7807d2)
+U 3 (#a77fa3)
+L 2 (#015232)
+U 2 (#7a21e3)" |> String.split("\n")
+```
+
+## Parsing
+
+```elixir
+parse = fn input ->
+  input
+  |> Enum.map(&String.split(&1, " "))
+  |> Enum.map(fn [dir, steps, _color] -> [dir, String.to_integer(steps)] end)
+  |> Enum.map(fn [dir, steps] ->
+    case dir do
+      "D" -> [steps, 0]
+      "U" -> [-steps, 0]
+      "L" -> [0, -steps]
+      "R" -> [0, steps]
+    end
+  end)
+end
+
+parse.(test_input)
+```
+
+## Part One
+
+```elixir
+part_one = fn input ->
+  moves = input |> parse.()
+  start = {0, 0}
+
+  coords =
+    Enum.reduce(moves, {start, MapSet.new()}, fn [row_delta, col_delta], {{row, col}, set} ->
+      new_row = row + row_delta
+      new_col = col + col_delta
+      new_end_pos = {new_row, new_col}
+
+      positions =
+        if col_delta == 0,
+          do: Enum.map(row..new_row, fn r -> {r, col} end),
+          else: Enum.map(col..new_col, fn c -> {row, c} end)
+
+      {new_end_pos, MapSet.union(set, MapSet.new(positions))}
+    end)
+    |> elem(1)
+
+  {max_row, _c} = Enum.max_by(coords, fn {r, _c} -> r end)
+  {_r, max_col} = Enum.max_by(coords, fn {_r, c} -> c end)
+
+  polygon = %Geo.Polygon{coordinates: [coords]}
+
+  # very naiive approach
+  inner_count =
+    0..max_row
+    |> Enum.flat_map(fn row ->
+      0..max_col
+      # |> Enum.reduce({false, 0}, fn col, {is_in, count} ->
+      #   digged = MapSet.member?(coords, {row, col})
+      #   # IO.inspect("#{row} #{col} #{digged}")
+      #   digged_next_col = MapSet.member?(coords, {row, col + 1})
+      #   old_result = cond do
+      #     digged and digged_next_col -> {is_in, count}
+      #     is_in == false and digged == true -> {true, count}
+      #     is_in == true and digged == false -> {true, count + 1}
+      #     is_in == true and digged == true -> {false, count}
+      #     is_in == false and digged == false -> {false, count}
+      #   end
+      # end) |> elem(1)
+      |> Enum.map(fn col ->
+        if Topo.contains?(polygon, {row, col}) do
+          {row, col}
+        else
+          nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+    end)
+    |> Enum.count()
+
+  # |> Enum.sum (for the reduce)
+
+  Enum.count(coords) + inner_count
+end
+
+part_one.(input)
+# too low 5078
+# even lower 4822
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> Enum.to_list()
+end
+
+part_two.(test_input)
+```
