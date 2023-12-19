@@ -1,0 +1,147 @@
+# Day 19: Aplenty – Advent of Code 2023
+
+```elixir
+input =
+  File.read!("/Users/pw/src/weiland/adventofcode/2023/input/19.txt")
+
+# |> Stream.map(&String.trim/1)
+
+test_input =
+  "px{a<2006:qkq,m>2090:A,rfg}
+pv{a>1716:R,A}
+lnx{m>1548:A,A}
+rfg{s<537:gd,x>2440:R,A}
+qs{s>3448:A,lnx}
+qkq{x<1416:A,crn}
+crn{x>2662:A,R}
+in{s<1351:px,qqz}
+qqz{s>2770:qs,m<1801:hdj,R}
+gd{a>3333:R,R}
+hdj{m>838:A,pv}
+
+{x=787,m=2655,a=1222,s=2876}
+{x=1679,m=44,a=2067,s=496}
+{x=2036,m=264,a=79,s=2244}
+{x=2461,m=1339,a=466,s=291}
+{x=2127,m=1623,a=2188,s=1013}"
+```
+
+## Parsing
+
+```elixir
+parse = fn input ->
+  [workflows, ratings] = String.split(input, "\n\n")
+
+  workflows =
+    workflows
+    |> String.split("\n")
+    |> Enum.map(fn workflow ->
+      %{"name" => name, "rules" => rules} =
+        Regex.named_captures(~r/(?<name>.*){(?<rules>.*)}/, workflow)
+
+      rules =
+        rules
+        |> String.split(",")
+        |> Enum.map(fn rule ->
+          result = Regex.scan(~r/(.*)(<|>)(.*):(.*)/, rule)
+
+          if Enum.empty?(result) do
+            rule
+          else
+            [[_, name, op, value, result]] = result
+            {name, op, String.to_integer(value), result}
+          end
+        end)
+
+      {name, rules}
+    end)
+    |> Enum.into(%{})
+
+  ratings =
+    ratings
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn rating ->
+      [[_str, x, m, a, s]] = Regex.scan(~r/{x=(\d+),m=(\d+),a=(\d+),s=(\d+)}/, rating)
+
+      %{"x" => x, "m" => m, "a" => a, "s" => s}
+      |> Enum.map(fn {key, value} -> {key, String.to_integer(value)} end)
+      |> Enum.into(%{})
+    end)
+
+  {workflows, ratings}
+end
+
+parse.(test_input)
+```
+
+## Part One
+
+```elixir
+match = fn {_name, rules}, part ->
+  Enum.reduce_while(rules, nil, fn
+    rule_name, _acc when not is_tuple(rule_name) ->
+      {:halt, rule_name}
+
+    {var_name, op, value, target}, _acc ->
+      a = part[var_name]
+      predicate = if op == ">", do: a > value, else: a < value
+
+      result = if predicate, do: target, else: false
+
+      if result != false do
+        {:halt, result}
+      else
+        {:cont, nil}
+      end
+  end)
+end
+
+match.({"xyz", ["Q", "A"]}, %{"x" => 2, "m" => 4, "a" => 8, "s" => 16}) == "Q" &&
+  match.({"xyz", ["A"]}, %{"x" => 2, "m" => 4, "a" => 8, "s" => 16}) == "A" &&
+  match.({"xyz", [{"x", ">", 2, "bla"}, "A"]}, %{"x" => 2, "m" => 4, "a" => 8, "s" => 16}) == "A" &&
+  match.({"xyz", [{"x", "<", 2, "bla"}, "A"]}, %{"x" => 2, "m" => 4, "a" => 8, "s" => 16}) == "A" &&
+  match.({"xyz", [{"x", ">", 1, "bla"}, "A"]}, %{"x" => 2, "m" => 4, "a" => 8, "s" => 16}) ==
+    "bla" &&
+  match.({"xyz", [{"x", "<", 3, "bla"}, "A"]}, %{"x" => 2, "m" => 4, "a" => 8, "s" => 16}) ==
+    "bla"
+```
+
+```elixir
+part_one = fn input ->
+  {workflows, parts} = input |> parse.()
+
+  # parts |> Enum.map(fn part ->
+  part = Enum.at(parts, 0)
+  next = Enum.to_list(workflows)
+  accepted = []
+  rejected = []
+
+  Stream.unfold({next, accepted, rejected}, fn
+    {[], _accepted, _rejected} ->
+      nil
+
+    {[workflow = {name, _rules} | rest], accepted, rejected} ->
+      result = match.(workflow, part)
+      accepted = if result == "A", do: [name, accepted], else: accepted
+      rejected = if result == "R", do: [name, rejected], else: rejected
+      rest = if result not in ["A", "R"], do: [workflows[result] | rest], else: rest
+      {0, {rest, accepted, rejected}}
+  end)
+
+  # end)
+end
+
+part_one.(test_input)
+|> Enum.to_list()
+```
+
+## Part Two
+
+```elixir
+part_two = fn input ->
+  input
+  |> Enum.to_list()
+end
+
+part_two.(test_input)
+```
