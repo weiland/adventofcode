@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 const testInput = `3   4
 4   3
 2   5
@@ -9,39 +11,43 @@ const testInput = `3   4
 const file = Bun.file("./01.txt");
 const text = await file.text();
 
-const parse = (input: string) =>
-  input.split("\n").map((line) => line.split("   ").map((n) => Number.parseInt(n)));
+// type Tuple = [number, number];
 type Rows = number[][];
-type Lists = { a: number[]; b: number[] };
-const transform = (rows: Rows): Lists =>
+type Lists = { left: number[]; right: number[] };
+
+const parse = (input: string): Rows =>
+  input.split("\n").map((line) => line.split("   ").map(Number));
+
+const transform = (rows: Rows): [number[], number[]] =>
   rows.reduce(
-    ({ a, b }, [ea, eb]) => {
-      a.push(ea);
-      b.push(eb);
-      return { a, b };
-    },
-    { a: [], b: [] },
+    ([left, right]: [number[], number[]], [r, l]) => [
+      [...left, r],
+      [...right, l],
+    ],
+    [[], []],
   );
 
 const getLists = (input: string): Lists => {
   const parsed = parse(input);
-  // remove last line from parsed input
+  // remove last empty line from parsed input
   parsed.pop();
-  return transform(parsed);
+  const [left, right] = transform(parsed);
+  return { left, right };
 };
+
 const partOne = (input: string) => {
-  const { a, b } = getLists(input);
-  a.sort();
-  b.sort();
-  const diff = a.map((ea: number, i: number) => ea - b[i]).reduce((a: number, b: number) => a + b);
-  return diff;
+  const { left, right } = getLists(input);
+  left.sort();
+  right.sort();
+  // here we could calculate part two's similarity as well
+  return left.reduce((distance, ea: number, i: number) => distance + Math.abs(ea - right[i]), 0);
 };
 
 const partTwo = (input: string) => {
-  const { a, b } = getLists(input);
-  return a
-    .map((ea, i) => b.filter((eb) => eb === ea).length * ea)
-    .reduce((acc, curr) => acc + curr, 0);
+  const { left, right } = getLists(input);
+  return left
+    .map((ea) => right.filter((eb) => eb === ea).length * ea)
+    .reduce((similarity, curr) => similarity + curr, 0);
 };
 
 if (import.meta.main) {
