@@ -36,7 +36,7 @@ fn part_two(input: &str) -> u32 {
 }
 
 fn main() {
-    let input: String = read_file("01.txt").unwrap();
+    let input: String = read_file("inputs/01.txt").unwrap();
     println!("Day 01");
     println!("Part 1: {}", part_one(&input));
     println!("Part 2: {}", part_two(&input));
