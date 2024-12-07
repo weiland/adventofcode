@@ -1,6 +1,10 @@
 use regex::Regex;
 use std::fs;
 
+// use crate::Day;
+
+// pub struct Day01;
+
 fn extract_instructions(str: &str) -> u32 {
     let re = Regex::new(r"mul\((?<lhs>\d{1,3})\,(?<rhs>\d{1,3})\)").unwrap();
     re.captures_iter(str)
@@ -39,20 +43,41 @@ fn split(str: &str) -> Vec<&str> {
 }
 
 fn part_two(str: &str) -> u32 {
-    let instructions = split(str);
-    let res = instructions.join("");
-    extract_instructions(&res)
+    let mut is_do = true;
+    let mut sum = 0;
+    let re =
+        Regex::new(r"(?<do>do\(\))|(?<dont>don't\(\))|mul\((?<lhs>\d{1,3})\,(?<rhs>\d{1,3})\)")
+            .unwrap();
+    re.captures_iter(str).for_each(|cap| {
+        if cap.name("do").is_some() {
+            is_do = true;
+        } else if cap.name("dont").is_some() {
+            is_do = false;
+        } else {
+            let lhs = cap.name("lhs").unwrap().as_str().parse::<u32>().unwrap();
+            let rhs = cap.name("rhs").unwrap().as_str().parse::<u32>().unwrap();
+            if is_do {
+                sum += lhs * rhs;
+            }
+        }
+    });
+    println!("sum: {}", sum);
+    return sum;
 }
 
+#[test]
+fn test_part_two() {
+    let res = part_two("xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))");
+    assert_eq!(res, 48);
+}
+
+// #[ignore = "only for prod"]
 #[test]
 fn assert_part_two() {
     let res = part_two("xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))");
     assert_eq!(res, 48);
-    // 115584669 too high
-    // println!("Part 2: {}", part_two(&input));
     let input: String =
-        fs::read_to_string("/Users/weiland.p/Documents/Code/adventofcode/2024/inputs/day03.txt")
-            .unwrap();
+        fs::read_to_string("/Users/pw/Documents/Code/adventofcode/2024/inputs/day03.txt").unwrap();
     let prod_res = part_two(&input);
     assert!(prod_res < 115584669);
     assert!(prod_res > 87336064);
